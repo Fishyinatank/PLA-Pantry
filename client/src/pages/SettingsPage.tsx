@@ -1,11 +1,11 @@
 import { useAuth } from "@/_core/hooks/useAuth";
-import { trpc } from "@/lib/trpc";
+import { useFilaments } from "@/lib/filamentStore";
 import { Download, LogOut, Moon, Shield, User } from "lucide-react";
 import { toast } from "sonner";
 
 export default function SettingsPage() {
-  const { user, logout } = useAuth();
-  const { data: stats } = trpc.filaments.stats.useQuery();
+  const { user, signOut, isDevMode } = useAuth();
+  const { stats } = useFilaments();
 
   const handleExport = () => {
     toast.info("Data export coming soon!");
@@ -35,6 +35,11 @@ export default function SettingsPage() {
             <div>
               <p className="font-semibold text-foreground">{user?.name ?? "User"}</p>
               <p className="text-sm text-muted-foreground">{user?.email ?? "No email"}</p>
+              {isDevMode && (
+                <p className="mt-1 inline-flex rounded-full border border-amber-400/30 bg-amber-400/10 px-2 py-0.5 text-xs font-semibold text-amber-100">
+                  Dev Mode
+                </p>
+              )}
               <p className="text-xs text-muted-foreground mt-0.5">
                 {stats?.totalSpools ?? 0} spool{stats?.totalSpools !== 1 ? "s" : ""} in inventory
               </p>
@@ -97,7 +102,7 @@ export default function SettingsPage() {
               <p className="text-xs text-muted-foreground">Sign out of PLA Pantry on this device</p>
             </div>
             <button
-              onClick={logout}
+              onClick={signOut}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:opacity-90"
               style={{ background: "oklch(0.55 0.20 25 / 0.15)", color: "oklch(0.65 0.20 25)", border: "1px solid oklch(0.55 0.20 25 / 0.30)" }}
             >

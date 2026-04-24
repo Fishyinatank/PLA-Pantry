@@ -1,11 +1,11 @@
 import { AlertTriangle, Edit2, MoreVertical, Trash2 } from "lucide-react";
 import { useState } from "react";
-import type { Filament } from "../../../drizzle/schema";
+import type { FilamentRecord } from "@/lib/filamentStore";
 import { LOW_STOCK_THRESHOLD } from "@/lib/filamentData";
 
 interface SpoolCardProps {
-  filament: Filament;
-  onEdit: (f: Filament) => void;
+  filament: FilamentRecord;
+  onEdit: (f: FilamentRecord) => void;
   onDelete: (id: number) => void;
 }
 

@@ -1,5 +1,5 @@
-import { trpc } from "@/lib/trpc";
 import { BRANDS, MATERIAL_FAMILIES, LOW_STOCK_THRESHOLD } from "@/lib/filamentData";
+import { useFilaments, type FilamentRecord } from "@/lib/filamentStore";
 import AddEditSpoolModal from "@/components/AddEditSpoolModal";
 import SpoolCard from "@/components/SpoolCard";
 import {
@@ -14,7 +14,6 @@ import {
   X,
 } from "lucide-react";
 import { useMemo, useState } from "react";
-import type { Filament } from "../../../drizzle/schema";
 import { toast } from "sonner";
 
 type SortKey = "updatedAt" | "brand" | "material" | "remaining";
@@ -29,29 +28,20 @@ export default function FilamentsPage() {
   const [sortAsc, setSortAsc] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [modalOpen, setModalOpen] = useState(false);
-  const [editTarget, setEditTarget] = useState<Filament | null>(null);
+  const [editTarget, setEditTarget] = useState<FilamentRecord | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
 
-  const utils = trpc.useUtils();
-  const { data: filaments, isLoading } = trpc.filaments.list.useQuery({});
-  const deleteMutation = trpc.filaments.delete.useMutation({
-    onMutate: async ({ id }) => {
-      await utils.filaments.list.cancel();
-      const prev = utils.filaments.list.getData({});
-      utils.filaments.list.setData({}, old => old?.filter(f => f.id !== id));
-      return { prev };
-    },
-    onError: (_e, _v, ctx) => {
-      if (ctx?.prev) utils.filaments.list.setData({}, ctx.prev);
-      toast.error("Failed to delete spool");
-    },
-    onSettled: () => { utils.filaments.list.invalidate(); utils.filaments.stats.invalidate(); },
-    onSuccess: () => toast.success("Spool deleted"),
-  });
+  const {
+    filaments,
+    isLoading,
+    error,
+    createFilament,
+    updateFilament,
+    deleteFilament,
+  } = useFilaments();
 
   const filtered = useMemo(() => {
-    if (!filaments) return [];
     let list = [...filaments];
     if (search) {
       const s = search.toLowerCase();
@@ -77,12 +67,22 @@ export default function FilamentsPage() {
   }, [filaments, search, filterBrand, filterMaterial, filterLowStock, sortKey, sortAsc]);
 
   const hasFilters = filterBrand || filterMaterial || filterLowStock;
-  const brandsInUse = useMemo(() => Array.from(new Set(filaments?.map(f => f.brand) ?? [])).sort(), [filaments]);
-  const materialsInUse = useMemo(() => Array.from(new Set(filaments?.map(f => f.materialFamily) ?? [])).sort(), [filaments]);
+  const brandsInUse = useMemo(() => Array.from(new Set(filaments.map(f => f.brand))).sort(), [filaments]);
+  const materialsInUse = useMemo(() => Array.from(new Set(filaments.map(f => f.materialFamily))).sort(), [filaments]);
 
-  const handleEdit = (f: Filament) => { setEditTarget(f); setModalOpen(true); };
+  const handleEdit = (f: FilamentRecord) => { setEditTarget(f); setModalOpen(true); };
   const handleDelete = (id: number) => setDeleteId(id);
-  const confirmDelete = () => { if (deleteId) deleteMutation.mutate({ id: deleteId }); setDeleteId(null); };
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    try {
+      await deleteFilament(deleteId);
+      toast.success("Spool deleted");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete spool");
+    } finally {
+      setDeleteId(null);
+    }
+  };
 
   return (
     <div className="flex flex-col h-full">
@@ -92,8 +92,9 @@ export default function FilamentsPage() {
           <div>
             <h1 className="text-xl font-bold text-foreground">Filaments</h1>
             <p className="text-sm text-muted-foreground mt-0.5">
-              {isLoading ? "Loading…" : `${filaments?.length ?? 0} spool${filaments?.length !== 1 ? "s" : ""} in your inventory`}
+              {isLoading ? "Loading…" : `${filaments.length} spool${filaments.length !== 1 ? "s" : ""} in your inventory`}
             </p>
+            {error && <p className="text-xs text-destructive mt-1">{error.message}</p>}
           </div>
           <button
             onClick={() => { setEditTarget(null); setModalOpen(true); }}
@@ -255,7 +256,7 @@ export default function FilamentsPage() {
           </div>
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 gap-5">
-            {filaments?.length === 0 ? (
+            {filaments.length === 0 ? (
               <>
                 <div className="w-20 h-20 rounded-2xl flex items-center justify-center" style={{ background: "oklch(0.78 0.16 85 / 0.08)", border: "1px solid oklch(0.78 0.16 85 / 0.20)" }}>
                   <Plus className="w-8 h-8" style={{ color: "var(--gold)" }} />
@@ -363,6 +364,8 @@ export default function FilamentsPage() {
         editTarget={editTarget}
         onClose={() => { setModalOpen(false); setEditTarget(null); }}
         onSaved={() => { setModalOpen(false); setEditTarget(null); }}
+        onCreate={createFilament}
+        onUpdate={updateFilament}
       />
 
       {/* Delete confirmation */}

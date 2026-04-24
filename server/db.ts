@@ -22,7 +22,7 @@ export async function getDb() {
 export async function upsertUser(user: InsertUser): Promise<void> {
   if (!user.openId) throw new Error("User openId is required for upsert");
   const db = await getDb();
-  if (!db) { console.warn("[Database] Cannot upsert user: database not available"); return; }
+  if (!db) { console.warn("[Database] User upsert skipped: SQL database is not configured"); return; }
 
   const values: InsertUser = { openId: user.openId };
   const updateSet: Record<string, unknown> = {};
@@ -113,7 +113,7 @@ export async function getFilamentById(id: number, userId: number) {
 
 export async function createFilament(userId: number, data: Omit<InsertFilament, "id" | "userId" | "createdAt" | "updatedAt">) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) { console.warn("[Database] Filament create skipped: SQL database is not configured"); return null; }
   const { remainingGrams, remainingPercent } = calculateRemaining(data);
   const values: InsertFilament = {
     ...data,
@@ -127,7 +127,7 @@ export async function createFilament(userId: number, data: Omit<InsertFilament, 
 
 export async function updateFilament(id: number, userId: number, data: Partial<InsertFilament>) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) { console.warn("[Database] Filament update skipped: SQL database is not configured"); return; }
   const existing = await getFilamentById(id, userId);
   if (!existing) throw new Error("Filament not found");
   const merged = { ...existing, ...data };
@@ -141,7 +141,7 @@ export async function updateFilament(id: number, userId: number, data: Partial<I
 
 export async function deleteFilament(id: number, userId: number) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) { console.warn("[Database] Filament delete skipped: SQL database is not configured"); return; }
   await db.delete(filaments).where(and(eq(filaments.id, id), eq(filaments.userId, userId)));
 }
 

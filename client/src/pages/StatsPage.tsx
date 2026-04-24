@@ -1,4 +1,4 @@
-import { trpc } from "@/lib/trpc";
+import { useFilaments } from "@/lib/filamentStore";
 import { AlertTriangle, BarChart3, Package, Percent, Weight } from "lucide-react";
 import {
   Bar,
@@ -38,7 +38,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 export default function StatsPage() {
-  const { data: stats, isLoading } = trpc.filaments.stats.useQuery();
+  const { stats, isLoading } = useFilaments();
 
   const statCards = [
     {

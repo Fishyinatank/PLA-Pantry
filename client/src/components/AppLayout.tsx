@@ -1,5 +1,4 @@
 import { useAuth } from "@/_core/hooks/useAuth";
-import { getLoginUrl } from "@/const";
 import {
   AlertTriangle,
   BarChart3,
@@ -33,7 +32,7 @@ interface AppLayoutProps {
 }
 
 export default function AppLayout({ children }: AppLayoutProps) {
-  const { user, loading, isAuthenticated, logout } = useAuth();
+  const { user, loading, signOut, isDevMode } = useAuth();
   const [location] = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -47,57 +46,6 @@ export default function AppLayout({ children }: AppLayoutProps) {
             style={{ borderColor: "oklch(0.78 0.16 85 / 0.3)", borderTopColor: "var(--gold)" }}
           />
           <p className="text-muted-foreground text-sm">Loading PLA Pantry…</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background px-4">
-        <div className="flex flex-col items-center gap-8 max-w-sm w-full">
-          <div className="flex flex-col items-center gap-3">
-            <div
-              className="w-16 h-16 rounded-2xl flex items-center justify-center"
-              style={{ background: "oklch(0.78 0.16 85 / 0.12)", border: "1px solid oklch(0.78 0.16 85 / 0.30)" }}
-            >
-              <Package className="w-8 h-8" style={{ color: "var(--gold)" }} />
-            </div>
-            <div className="text-center">
-              <h1 className="text-3xl font-bold tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif", color: "var(--gold)" }}>
-                PLA Pantry
-              </h1>
-              <p className="text-muted-foreground text-sm mt-1">Premium filament inventory management</p>
-            </div>
-          </div>
-
-          <div className="w-full space-y-2">
-            {[
-              { icon: Layers, text: "Track every spool with precision" },
-              { icon: BarChart3, text: "Visualize your filament inventory" },
-              { icon: Package, text: "Never run out unexpectedly again" },
-            ].map(({ icon: Icon, text }) => (
-              <div
-                key={text}
-                className="flex items-center gap-3 px-4 py-3 rounded-lg"
-                style={{ background: "var(--card)", border: "1px solid var(--border)" }}
-              >
-                <Icon className="w-4 h-4 shrink-0" style={{ color: "var(--gold)" }} />
-                <span className="text-sm text-foreground">{text}</span>
-              </div>
-            ))}
-          </div>
-
-          <a
-            href={getLoginUrl()}
-            className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-150 hover:opacity-90 active:scale-95"
-            style={{ background: "var(--gold)", color: "oklch(0.10 0.005 240)" }}
-          >
-            Sign in to PLA Pantry
-          </a>
-          <p className="text-xs text-muted-foreground text-center">
-            Your inventory is private and synced across all your devices.
-          </p>
         </div>
       </div>
     );
@@ -155,12 +103,19 @@ export default function AppLayout({ children }: AppLayoutProps) {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-xs font-medium truncate text-foreground">{user?.name ?? "User"}</p>
-              <p className="text-xs truncate text-muted-foreground">{user?.email ?? ""}</p>
+              <div className="flex items-center gap-1.5">
+                <p className="text-xs truncate text-muted-foreground">{user?.email ?? ""}</p>
+                {isDevMode && (
+                  <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-1.5 py-0.5 text-[10px] font-semibold text-amber-100">
+                    Dev Mode
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         )}
         <button
-          onClick={logout}
+          onClick={signOut}
           className={`nav-item w-full hover:text-destructive ${collapsed ? "justify-center px-2" : ""}`}
           title={collapsed ? "Sign out" : undefined}
         >

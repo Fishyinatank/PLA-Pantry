@@ -1,4 +1,3 @@
-import { trpc } from "@/lib/trpc";
 import {
   ADVERTISED_WEIGHTS,
   BRANDS,
@@ -8,16 +7,18 @@ import {
   SPOOL_MATERIALS,
   SPOOL_TYPES,
 } from "@/lib/filamentData";
+import type { FilamentInput, FilamentRecord } from "@/lib/filamentStore";
 import { Check, ChevronDown, Palette, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import type { Filament } from "../../../drizzle/schema";
 import { toast } from "sonner";
 
 interface AddEditSpoolModalProps {
   open: boolean;
-  editTarget?: Filament | null;
+  editTarget?: FilamentRecord | null;
   onClose: () => void;
   onSaved: () => void;
+  onCreate: (input: FilamentInput) => Promise<void>;
+  onUpdate: (id: number, input: FilamentInput) => Promise<void>;
 }
 
 const FIELD_STYLE = {
@@ -34,17 +35,14 @@ const FIELD_STYLE = {
 
 const LABEL_STYLE = "block text-xs font-medium text-muted-foreground mb-1.5";
 
-export default function AddEditSpoolModal({ open, editTarget, onClose, onSaved }: AddEditSpoolModalProps) {
-  const utils = trpc.useUtils();
-  const createMutation = trpc.filaments.create.useMutation({
-    onSuccess: () => { utils.filaments.list.invalidate(); utils.filaments.stats.invalidate(); onSaved(); toast.success("Spool saved!"); },
-    onError: (e) => toast.error(e.message),
-  });
-  const updateMutation = trpc.filaments.update.useMutation({
-    onSuccess: () => { utils.filaments.list.invalidate(); utils.filaments.stats.invalidate(); onSaved(); toast.success("Spool updated!"); },
-    onError: (e) => toast.error(e.message),
-  });
-
+export default function AddEditSpoolModal({
+  open,
+  editTarget,
+  onClose,
+  onSaved,
+  onCreate,
+  onUpdate,
+}: AddEditSpoolModalProps) {
   // Form state
   const [brand, setBrand] = useState("");
   const [brandSearch, setBrandSearch] = useState("");
@@ -129,9 +127,9 @@ export default function AddEditSpoolModal({ open, editTarget, onClose, onSaved }
   const filteredBrands = BRANDS.filter(b => b.toLowerCase().includes(brandSearch.toLowerCase()));
   const subtypes = MATERIAL_SUBTYPES[materialFamily] ?? ["Standard"];
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!brand.trim()) { toast.error("Brand is required"); return; }
-    const payload = {
+    const payload: FilamentInput = {
       brand: brand.trim(),
       productLine: productLine || undefined,
       materialFamily,
@@ -151,14 +149,25 @@ export default function AddEditSpoolModal({ open, editTarget, onClose, onSaved }
       storageLocation: storageLocation || undefined,
       isDryBox,
     };
-    if (editTarget) {
-      updateMutation.mutate({ id: editTarget.id, ...payload });
-    } else {
-      createMutation.mutate(payload);
+    try {
+      setSaving(true);
+      if (editTarget) {
+        await onUpdate(editTarget.id, payload);
+        toast.success("Spool updated!");
+      } else {
+        await onCreate(payload);
+        toast.success("Spool saved!");
+      }
+      onSaved();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to save spool");
+    } finally {
+      setSaving(false);
     }
   };
 
-  const isLoading = createMutation.isPending || updateMutation.isPending;
+  const [saving, setSaving] = useState(false);
+  const isLoading = saving;
 
   if (!open) return null;
 
