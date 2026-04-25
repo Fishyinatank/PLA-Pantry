@@ -1,13 +1,15 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useFilaments } from "@/lib/filamentStore";
+import { hasDevToken } from "@/lib/devToken";
 import { useTheme } from "@/contexts/ThemeContext";
-import { Download, LogOut, Moon, Shield, User } from "lucide-react";
+import { BadgeCheck, Download, LogOut, Moon, Shield, User } from "lucide-react";
 import { toast } from "sonner";
 
 export default function SettingsPage() {
   const { user, signOut, isDevMode } = useAuth();
   const { stats } = useFilaments();
   const { theme, toggleTheme } = useTheme();
+  const showDevToken = hasDevToken(user?.email);
 
   const handleExport = () => {
     toast.info("Data export coming soon!");
@@ -41,6 +43,12 @@ export default function SettingsPage() {
               {isDevMode && (
                 <p className="mt-1 inline-flex rounded-full border border-amber-400/30 bg-amber-400/10 px-2 py-0.5 text-xs font-semibold" style={{ color: "var(--auth-dev-text)" }}>
                   Dev Mode
+                </p>
+              )}
+              {showDevToken && (
+                <p className="mt-1 inline-flex items-center gap-1 rounded-full border border-amber-400/30 bg-amber-400/10 px-2 py-0.5 text-xs font-semibold" style={{ color: "var(--gold)" }}>
+                  <BadgeCheck className="h-3 w-3" />
+                  Dev
                 </p>
               )}
               <p className="text-xs text-muted-foreground mt-0.5">

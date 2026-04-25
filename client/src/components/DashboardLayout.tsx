@@ -1,4 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import { hasDevToken } from "@/lib/devToken";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -79,6 +80,7 @@ function DashboardLayoutContent({
   setSidebarWidth,
 }: DashboardLayoutContentProps) {
   const { user, signOut, isDevMode } = useAuth();
+  const showDevToken = hasDevToken(user?.email);
   const [location, setLocation] = useLocation();
   const { state, toggleSidebar } = useSidebar();
   const isCollapsed = state === "collapsed";
@@ -192,6 +194,11 @@ function DashboardLayoutContent({
                     {isDevMode && (
                       <span className="mt-1.5 inline-flex rounded-full border border-amber-400/30 bg-amber-400/10 px-1.5 py-0.5 text-[10px] font-semibold text-amber-100">
                         Dev Mode
+                      </span>
+                    )}
+                    {showDevToken && (
+                      <span className="mt-1.5 inline-flex rounded-full border border-amber-400/30 bg-amber-400/10 px-1.5 py-0.5 text-[10px] font-semibold text-amber-100">
+                        Dev
                       </span>
                     )}
                   </div>

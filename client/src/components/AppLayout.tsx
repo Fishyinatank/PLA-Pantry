@@ -1,6 +1,8 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import { hasDevToken } from "@/lib/devToken";
 import {
   AlertTriangle,
+  BadgeCheck,
   BarChart3,
   ChevronLeft,
   ChevronRight,
@@ -61,6 +63,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
     if (href === "/filaments" && (location === "/" || location === "/filaments")) return true;
     return location === href;
   };
+  const showDevToken = hasDevToken(user?.email);
 
   const SidebarInner = ({ onNav }: { onNav?: () => void }) => (
     <div className="flex flex-col h-full">
@@ -113,6 +116,12 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 {isDevMode && (
                   <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-1.5 py-0.5 text-[10px] font-semibold" style={{ color: "var(--auth-dev-text)" }}>
                     Dev Mode
+                  </span>
+                )}
+                {showDevToken && (
+                  <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/30 bg-amber-400/10 px-1.5 py-0.5 text-[10px] font-semibold" style={{ color: "var(--gold)" }} title="Dev token">
+                    <BadgeCheck className="h-3 w-3" />
+                    Dev
                   </span>
                 )}
               </div>
