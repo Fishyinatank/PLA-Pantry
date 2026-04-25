@@ -82,10 +82,57 @@
   --gold-dim: oklch(0.65 0.12 85);
   --surface: oklch(0.16 0.008 240);
   --surface-raised: oklch(0.19 0.009 240);
+  --auth-gradient: radial-gradient(circle at 50% 0%, oklch(0.78 0.16 85 / 0.18), transparent 34%), linear-gradient(135deg, oklch(0.10 0.005 240), oklch(0.15 0.012 240));
+  --auth-dot: radial-gradient(oklch(0.96 0.005 240) 1px, transparent 1px);
+  --auth-card-bg: oklch(0.13 0.008 240 / 0.88);
+  --auth-card-border: oklch(0.78 0.16 85 / 0.22);
+  --auth-card-shadow: 0 24px 80px oklch(0 0 0 / 0.42);
+  --auth-warning-text: oklch(0.92 0.12 85);
+  --auth-error-text: oklch(0.88 0.12 25);
+  --auth-dev-text: oklch(0.92 0.12 85);
 }
 
 /* Dark class mirrors :root since we are always dark */
 .dark { }
+
+.light {
+  color-scheme: light;
+  --primary: oklch(0.74 0.17 85);
+  --primary-foreground: oklch(0.10 0.005 240);
+  --background: oklch(0.97 0.006 90);
+  --foreground: oklch(0.16 0.010 240);
+  --card: oklch(0.995 0.003 90);
+  --card-foreground: oklch(0.16 0.010 240);
+  --popover: oklch(0.995 0.003 90);
+  --popover-foreground: oklch(0.16 0.010 240);
+  --secondary: oklch(0.92 0.008 240);
+  --secondary-foreground: oklch(0.32 0.010 240);
+  --muted: oklch(0.93 0.008 240);
+  --muted-foreground: oklch(0.38 0.012 240);
+  --accent: oklch(0.90 0.012 240);
+  --accent-foreground: oklch(0.16 0.010 240);
+  --destructive: oklch(0.55 0.20 25);
+  --destructive-foreground: oklch(0.98 0.004 90);
+  --border: oklch(0.84 0.008 240);
+  --input: oklch(0.96 0.006 240);
+  --ring: oklch(0.58 0.15 85);
+  --sidebar: oklch(0.94 0.007 240);
+  --sidebar-foreground: oklch(0.32 0.010 240);
+  --sidebar-accent: oklch(0.88 0.010 240);
+  --sidebar-border: oklch(0.82 0.008 240);
+  --gold: oklch(0.74 0.17 85);
+  --gold-dim: oklch(0.60 0.14 85);
+  --surface: oklch(0.94 0.008 240);
+  --surface-raised: oklch(0.985 0.004 240);
+  --auth-gradient: radial-gradient(circle at 50% 0%, oklch(0.58 0.15 85 / 0.16), transparent 34%), linear-gradient(135deg, oklch(0.98 0.006 90), oklch(0.91 0.012 240));
+  --auth-dot: radial-gradient(oklch(0.20 0.010 240 / 0.22) 1px, transparent 1px);
+  --auth-card-bg: oklch(0.995 0.003 90 / 0.92);
+  --auth-card-border: oklch(0.58 0.15 85 / 0.28);
+  --auth-card-shadow: 0 24px 70px oklch(0.20 0.010 240 / 0.18);
+  --auth-warning-text: oklch(0.36 0.10 80);
+  --auth-error-text: oklch(0.42 0.14 25);
+  --auth-dev-text: oklch(0.36 0.10 80);
+}
 
 @layer base {
   * {
@@ -175,9 +222,10 @@
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    padding: 0.5rem 0.75rem;
+    min-height: clamp(2.55rem, 5.7vh, 3.25rem);
+    padding: 0.62rem 0.85rem;
     border-radius: 0.5rem;
-    font-size: 0.875rem;
+    font-size: 0.9rem;
     font-weight: 500;
     transition: all 0.15s ease;
     cursor: pointer;
@@ -205,4 +253,5 @@
   .animate-scale-in { animation: scaleIn 0.22s cubic-bezier(0.34, 1.4, 0.64, 1) forwards; }
   .animate-slide-right { animation: slideInRight 0.22s ease forwards; }
   .animate-slide-up { animation: slideInUp 0.2s ease forwards; }
+  .page-transition { animation: slideInUp 0.22s ease both; }
 }

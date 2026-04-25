@@ -1,11 +1,13 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useFilaments } from "@/lib/filamentStore";
+import { useTheme } from "@/contexts/ThemeContext";
 import { Download, LogOut, Moon, Shield, User } from "lucide-react";
 import { toast } from "sonner";
 
 export default function SettingsPage() {
   const { user, signOut, isDevMode } = useAuth();
   const { stats } = useFilaments();
+  const { theme, toggleTheme } = useTheme();
 
   const handleExport = () => {
     toast.info("Data export coming soon!");
@@ -18,9 +20,10 @@ export default function SettingsPage() {
         <p className="text-sm text-muted-foreground mt-0.5">Manage your account and preferences</p>
       </div>
 
-      <div className="flex-1 px-6 py-6 space-y-4 max-w-2xl">
+      <div className="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 py-6 overflow-x-hidden">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Profile */}
-        <div className="rounded-xl p-5 border" style={{ background: "var(--card)", borderColor: "var(--border)" }}>
+        <div className="rounded-xl p-5 border min-w-0" style={{ background: "var(--card)", borderColor: "var(--border)" }}>
           <div className="flex items-center gap-2 mb-4">
             <User className="w-4 h-4" style={{ color: "var(--gold)" }} />
             <h3 className="text-sm font-semibold text-foreground">Profile</h3>
@@ -36,7 +39,7 @@ export default function SettingsPage() {
               <p className="font-semibold text-foreground">{user?.name ?? "User"}</p>
               <p className="text-sm text-muted-foreground">{user?.email ?? "No email"}</p>
               {isDevMode && (
-                <p className="mt-1 inline-flex rounded-full border border-amber-400/30 bg-amber-400/10 px-2 py-0.5 text-xs font-semibold text-amber-100">
+                <p className="mt-1 inline-flex rounded-full border border-amber-400/30 bg-amber-400/10 px-2 py-0.5 text-xs font-semibold" style={{ color: "var(--auth-dev-text)" }}>
                   Dev Mode
                 </p>
               )}
@@ -48,7 +51,7 @@ export default function SettingsPage() {
         </div>
 
         {/* Appearance */}
-        <div className="rounded-xl p-5 border" style={{ background: "var(--card)", borderColor: "var(--border)" }}>
+        <div className="rounded-xl p-5 border min-w-0" style={{ background: "var(--card)", borderColor: "var(--border)" }}>
           <div className="flex items-center gap-2 mb-4">
             <Moon className="w-4 h-4" style={{ color: "oklch(0.65 0.18 200)" }} />
             <h3 className="text-sm font-semibold text-foreground">Appearance</h3>
@@ -58,17 +61,18 @@ export default function SettingsPage() {
               <p className="text-sm text-foreground">Dark Mode</p>
               <p className="text-xs text-muted-foreground">PLA Pantry is dark-mode first</p>
             </div>
-            <div
+            <button
+              onClick={toggleTheme}
               className="w-10 h-5 rounded-full flex items-center px-0.5"
-              style={{ background: "var(--gold)" }}
+              style={{ background: theme === "dark" ? "var(--gold)" : "var(--secondary)" }}
             >
-              <div className="w-4 h-4 rounded-full bg-white ml-auto" />
-            </div>
+              <div className={`w-4 h-4 rounded-full bg-white transition-all ${theme === "dark" ? "ml-auto" : ""}`} />
+            </button>
           </div>
         </div>
 
         {/* Data */}
-        <div className="rounded-xl p-5 border" style={{ background: "var(--card)", borderColor: "var(--border)" }}>
+        <div className="rounded-xl p-5 border min-w-0" style={{ background: "var(--card)", borderColor: "var(--border)" }}>
           <div className="flex items-center gap-2 mb-4">
             <Download className="w-4 h-4" style={{ color: "oklch(0.70 0.18 145)" }} />
             <h3 className="text-sm font-semibold text-foreground">Data</h3>
@@ -91,7 +95,7 @@ export default function SettingsPage() {
         </div>
 
         {/* Security */}
-        <div className="rounded-xl p-5 border" style={{ background: "var(--card)", borderColor: "var(--border)" }}>
+        <div className="rounded-xl p-5 border min-w-0" style={{ background: "var(--card)", borderColor: "var(--border)" }}>
           <div className="flex items-center gap-2 mb-4">
             <Shield className="w-4 h-4" style={{ color: "oklch(0.68 0.18 310)" }} />
             <h3 className="text-sm font-semibold text-foreground">Account</h3>
@@ -112,7 +116,8 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        <p className="text-xs text-muted-foreground text-center pt-2">
+        </div>
+        <p className="text-xs text-muted-foreground text-center pt-4">
           PLA Pantry · Your inventory is private and synced across devices
         </p>
       </div>

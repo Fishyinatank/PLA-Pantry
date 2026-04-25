@@ -14,26 +14,29 @@ export const BRANDS = [
 // ─── Material Families ────────────────────────────────────────────────────────
 export const MATERIAL_FAMILIES = [
   "PLA", "PETG", "ABS", "ASA", "TPU", "PC", "PA", "PET",
-  "PVA", "HIPS", "PEEK", "PEI", "Nylon", "Resin", "Other",
+  "PVA", "HIPS", "PEEK", "PEKK", "PEI", "Nylon", "Resin", "Support", "Composite", "Other",
 ];
 
 // ─── Material Subtypes ────────────────────────────────────────────────────────
 export const MATERIAL_SUBTYPES: Record<string, string[]> = {
-  PLA: ["Standard", "PLA+", "Tough", "Matte", "Silk", "Silk Rainbow", "Carbon Fiber", "Glass Fiber", "Wood Fill", "Metal Fill", "Marble", "Glow in the Dark", "High Speed", "Lightweight", "Recycled"],
-  PETG: ["Standard", "PETG+", "Matte", "Carbon Fiber", "Glass Fiber", "High Speed", "Transparent"],
-  ABS: ["Standard", "ABS+", "Carbon Fiber", "ESD", "Flame Retardant"],
-  ASA: ["Standard", "UV Resistant", "Aero", "Carbon Fiber"],
-  TPU: ["95A", "85A", "75A", "60D", "Conductive", "Carbon Fiber"],
-  PC: ["Standard", "PC-ABS", "PC-PBT", "Carbon Fiber", "Transparent"],
-  PA: ["Nylon 6", "Nylon 12", "PA-CF", "PA-GF", "PAHT", "PA6-CF"],
-  PET: ["Standard", "Recycled", "Transparent"],
-  PVA: ["Standard", "Fast-Dissolve"],
-  HIPS: ["Standard"],
-  PEEK: ["Standard", "Carbon Fiber"],
-  PEI: ["Standard", "ULTEM 9085"],
-  Nylon: ["Standard", "Carbon Fiber", "Glass Fiber", "Flexible"],
-  Resin: ["Standard", "ABS-Like", "Flexible", "Dental", "Engineering"],
-  Other: ["Custom"],
+  PLA: ["Standard", "PLA+", "Tough", "Matte", "Silk", "Silk Rainbow", "Carbon Fiber", "Glass Fiber", "Wood Fill", "Metal Fill", "Marble", "Glow in the Dark", "Conductive", "ESD", "High Speed", "High Temp", "Transparent", "Translucent", "Recycled", "Lightweight"],
+  PETG: ["Standard", "PETG+", "Matte", "Carbon Fiber", "Glass Fiber", "Conductive", "ESD", "High Speed", "Transparent", "Translucent", "Recycled"],
+  ABS: ["Standard", "ABS+", "Carbon Fiber", "Glass Fiber", "ESD", "Conductive", "Flame Retardant", "High Temp"],
+  ASA: ["Standard", "UV Resistant", "Aero", "Carbon Fiber", "Glass Fiber", "ESD", "High Speed"],
+  TPU: ["95A", "90A", "85A", "75A", "60D", "Flexible", "High Flow", "Conductive", "ESD", "Carbon Fiber"],
+  PC: ["Standard", "PC-ABS", "PC-PBT", "Carbon Fiber", "Glass Fiber", "Transparent", "High Temp", "Flame Retardant"],
+  PA: ["PA6", "PA12", "PA-CF", "PA-GF", "PAHT", "PA6-CF", "PA12-CF", "PA6-GF", "Flexible", "ESD", "High Temp"],
+  PET: ["Standard", "Recycled", "Transparent", "Translucent", "High Temp"],
+  PVA: ["Standard", "Fast-Dissolve", "Soluble Support", "Interface Support"],
+  HIPS: ["Standard", "Support", "High Impact", "Soluble Support"],
+  PEEK: ["Standard", "Carbon Fiber", "Glass Fiber", "ESD", "High Temp"],
+  PEKK: ["Standard", "Carbon Fiber", "High Temp"],
+  PEI: ["Standard", "ULTEM 9085", "ULTEM 1010", "Carbon Fiber", "High Temp"],
+  Nylon: ["Nylon 6", "Nylon 12", "Carbon Fiber", "Glass Fiber", "Flexible", "ESD", "High Temp"],
+  Resin: ["Standard", "ABS-Like", "Flexible", "Tough", "Dental", "Engineering", "High Temp", "Castable", "Transparent"],
+  Support: ["PVA", "BVOH", "HIPS", "Breakaway", "Soluble", "Interface", "Support W", "Support G"],
+  Composite: ["Carbon Fiber", "Glass Fiber", "Wood Fill", "Metal Fill", "Glow", "Conductive", "ESD", "Ceramic Fill"],
+  Other: ["Custom", "Composite", "Support", "Soluble", "Conductive", "ESD", "Glow", "Metal Fill", "Wood Fill", "Carbon Fiber", "Glass Fiber", "High Speed", "High Temp", "Recycled", "Transparent", "Flexible"],
 };
 
 // ─── Spool Types ──────────────────────────────────────────────────────────────
@@ -106,7 +109,7 @@ export const COLOR_PRESETS = [
 
 // ─── Color family classification ──────────────────────────────────────────────
 export const COLOR_FAMILIES = [
-  "Red", "Orange", "Yellow", "Green", "Blue", "Purple", "Pink", "White", "Gray", "Black", "Brown", "Metallic", "Transparent", "Other",
+  "Red", "Orange", "Yellow", "Green", "Blue", "Purple", "Pink", "Black", "White", "Gray", "Brown", "Metallic", "Transparent", "Other",
 ];
 
 export function getColorFamily(hex: string): string {
@@ -130,7 +133,7 @@ export function getColorFamily(hex: string): string {
   if (h < 45) return "Orange";
   if (h < 70) return "Yellow";
   if (h < 150) return "Green";
-  if (h < 195) return "Teal";
+  if (h < 195) return "Blue";
   if (h < 260) return "Blue";
   if (h < 290) return "Purple";
   if (h < 345) return "Pink";

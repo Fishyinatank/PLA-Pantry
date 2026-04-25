@@ -2,6 +2,7 @@ import { BRANDS, MATERIAL_FAMILIES, LOW_STOCK_THRESHOLD } from "@/lib/filamentDa
 import { useFilaments, type FilamentRecord } from "@/lib/filamentStore";
 import AddEditSpoolModal from "@/components/AddEditSpoolModal";
 import SpoolCard from "@/components/SpoolCard";
+import SpoolViz from "@/components/SpoolViz";
 import {
   AlertTriangle,
   ChevronDown,
@@ -11,6 +12,7 @@ import {
   Plus,
   Search,
   SlidersHorizontal,
+  ExternalLink,
   X,
 } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -30,6 +32,9 @@ export default function FilamentsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<FilamentRecord | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [recalibrateTarget, setRecalibrateTarget] = useState<FilamentRecord | null>(null);
+  const [detailTarget, setDetailTarget] = useState<FilamentRecord | null>(null);
+  const [recalibrateWeight, setRecalibrateWeight] = useState<number | "">("");
   const [filterOpen, setFilterOpen] = useState(false);
 
   const {
@@ -39,6 +44,7 @@ export default function FilamentsPage() {
     createFilament,
     updateFilament,
     deleteFilament,
+    recalibrateFilament,
   } = useFilaments();
 
   const filtered = useMemo(() => {
@@ -72,6 +78,10 @@ export default function FilamentsPage() {
 
   const handleEdit = (f: FilamentRecord) => { setEditTarget(f); setModalOpen(true); };
   const handleDelete = (id: number) => setDeleteId(id);
+  const handleRecalibrate = (f: FilamentRecord) => {
+    setRecalibrateTarget(f);
+    setRecalibrateWeight(f.currentTotalWeight ? Number(f.currentTotalWeight) : "");
+  };
   const confirmDelete = async () => {
     if (!deleteId) return;
     try {
@@ -294,7 +304,7 @@ export default function FilamentsPage() {
         ) : viewMode === "grid" ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {filtered.map(f => (
-              <SpoolCard key={f.id} filament={f} onEdit={handleEdit} onDelete={handleDelete} />
+              <SpoolCard key={f.id} filament={f} onEdit={handleEdit} onDelete={handleDelete} onRecalibrate={handleRecalibrate} onOpenDetails={setDetailTarget} />
             ))}
           </div>
         ) : (
@@ -302,8 +312,9 @@ export default function FilamentsPage() {
             {filtered.map(f => (
               <div
                 key={f.id}
-                className="card-hover flex items-center gap-4 px-4 py-3 rounded-xl border"
+                className="card-hover flex items-center gap-4 px-4 py-3 rounded-xl border cursor-pointer"
                 style={{ background: "var(--card)", borderColor: "var(--border)" }}
+                onClick={() => setDetailTarget(f)}
               >
                 <div
                   className="w-10 h-10 rounded-full shrink-0 flex items-center justify-center"
@@ -345,11 +356,14 @@ export default function FilamentsPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
-                  <button onClick={() => handleEdit(f)} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-all">
+                  <button onClick={(event) => { event.stopPropagation(); handleEdit(f); }} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-all">
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                   </button>
-                  <button onClick={() => handleDelete(f.id)} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all">
+                  <button onClick={(event) => { event.stopPropagation(); handleDelete(f.id); }} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all">
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                  </button>
+                  <button onClick={(event) => { event.stopPropagation(); handleRecalibrate(f); }} className="px-2 py-1 rounded-lg text-xs font-semibold hover:bg-accent transition-all" style={{ color: "var(--gold)" }}>
+                    Recalibrate
                   </button>
                 </div>
               </div>
@@ -357,6 +371,74 @@ export default function FilamentsPage() {
           </div>
         )}
       </div>
+
+      {detailTarget && (
+        <div className="fixed inset-0 z-50">
+          <div className="absolute inset-0 bg-black/55 backdrop-blur-sm animate-fade-in" onClick={() => setDetailTarget(null)} />
+          <aside className="absolute right-0 top-0 h-full w-full max-w-md overflow-y-auto shadow-2xl animate-slide-right" style={{ background: "var(--card)", borderLeft: "1px solid var(--border)" }}>
+            <div className="sticky top-0 z-10 flex items-center justify-between gap-3 px-5 py-4 border-b" style={{ background: "var(--card)", borderColor: "var(--border)" }}>
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="h-10 w-10 rounded-full shrink-0" style={{ background: detailTarget.colorHex, border: `2px solid ${detailTarget.colorHex}88` }} />
+                <div className="min-w-0">
+                  <h2 className="font-semibold truncate">{detailTarget.brand}</h2>
+                  <p className="text-xs text-muted-foreground truncate">{detailTarget.materialFamily}{detailTarget.materialSubtype ? ` · ${detailTarget.materialSubtype}` : ""}</p>
+                </div>
+              </div>
+              <button onClick={() => setDetailTarget(null)} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent"><X className="w-4 h-4" /></button>
+            </div>
+
+            <div className="p-5 space-y-5">
+              <div className="rounded-2xl border p-5 text-center" style={{ background: "var(--secondary)", borderColor: "var(--border)" }}>
+                <div className="flex justify-center">
+                  <SpoolViz filament={detailTarget} size="lg" />
+                </div>
+                <p className="mt-3 text-lg font-semibold">{detailTarget.remainingGrams ? `${Math.round(Number(detailTarget.remainingGrams))}g` : "Not recorded"}</p>
+                <p className="text-xs text-muted-foreground">{detailTarget.remainingPercent ? `${Math.round(Number(detailTarget.remainingPercent))}% remaining` : "Remaining percent not recorded"}</p>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                <button onClick={() => { setDetailTarget(null); handleEdit(detailTarget); }} className="rounded-lg px-3 py-2 text-sm font-semibold" style={{ background: "var(--gold)", color: "oklch(0.10 0.005 240)" }}>Edit</button>
+                <button onClick={() => { setDetailTarget(null); handleRecalibrate(detailTarget); }} className="rounded-lg px-3 py-2 text-sm font-semibold" style={{ background: "var(--secondary)", border: "1px solid var(--border)" }}>Recalibrate</button>
+                <button onClick={() => { setDetailTarget(null); handleDelete(detailTarget.id); }} className="rounded-lg px-3 py-2 text-sm font-semibold" style={{ background: "oklch(0.55 0.20 25 / 0.15)", color: "oklch(0.55 0.20 25)" }}>Delete</button>
+              </div>
+
+              <DetailSection title="Identity" rows={[
+                ["Brand", detailTarget.brand],
+                ["Product line", detailTarget.productLine],
+                ["Material", `${detailTarget.materialFamily}${detailTarget.materialSubtype ? ` · ${detailTarget.materialSubtype}` : ""}`],
+                ["Color", `${detailTarget.colorName ?? "Unnamed"} · ${detailTarget.colorHex}`],
+              ]} />
+              <DetailSection title="Weight" rows={[
+                ["Advertised", detailTarget.advertisedWeight ? `${detailTarget.advertisedWeight}g` : null],
+                ["Remaining", detailTarget.remainingGrams ? `${Math.round(Number(detailTarget.remainingGrams))}g` : null],
+                ["Percent", detailTarget.remainingPercent ? `${Math.round(Number(detailTarget.remainingPercent))}%` : null],
+                ["Spool", [detailTarget.spoolType, detailTarget.spoolMaterial].filter(Boolean).join(" · ")],
+              ]} />
+              <DetailSection title="Storage" rows={[
+                ["Location", detailTarget.storageLocation],
+                ["Dry box", detailTarget.isDryBox ? "Yes" : "No"],
+                ["Purchase", detailTarget.purchaseLink],
+                ["Notes", detailTarget.notes],
+              ]} linkValue={detailTarget.purchaseLink ?? undefined} />
+              <DetailSection title="Print Settings" rows={[
+                ["Max flow", detailTarget.maxVolumetricFlow],
+                ["Pressure advance", detailTarget.pressureAdvance],
+                ["Nozzle", detailTarget.nozzleTempMin || detailTarget.nozzleTempMax ? `${detailTarget.nozzleTempMin ?? "?"}-${detailTarget.nozzleTempMax ?? "?"} C` : null],
+                ["Bed", detailTarget.bedTemp ? `${detailTarget.bedTemp} C` : null],
+                ["Chamber", detailTarget.chamberTemp ? `${detailTarget.chamberTemp} C` : null],
+                ["Cooling", detailTarget.coolingFanPercent ? `${detailTarget.coolingFanPercent}%` : null],
+                ["Speed", detailTarget.recommendedSpeed ? `${detailTarget.recommendedSpeed} mm/s` : null],
+                ["Drying", detailTarget.dryingTemp || detailTarget.dryingTime ? `${detailTarget.dryingTemp ?? "?"} C · ${detailTarget.dryingTime ?? "?"}` : null],
+                ["Slicer notes", detailTarget.slicerNotes],
+              ]} />
+              <DetailSection title="Dates" rows={[
+                ["Created", detailTarget.createdAt ? detailTarget.createdAt.toLocaleDateString() : null],
+                ["Updated", detailTarget.updatedAt ? detailTarget.updatedAt.toLocaleDateString() : null],
+              ]} />
+            </div>
+          </aside>
+        </div>
+      )}
 
       {/* Add/Edit Modal */}
       <AddEditSpoolModal
@@ -390,6 +472,63 @@ export default function FilamentsPage() {
           </div>
         </div>
       )}
+
+      {recalibrateTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-fade-in" onClick={() => setRecalibrateTarget(null)} />
+          <div className="relative z-10 rounded-2xl p-6 max-w-sm w-full mx-4 animate-scale-in" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
+            <h3 className="text-base font-semibold text-foreground mb-2">Recalibrate Spool</h3>
+            <p className="text-sm text-muted-foreground mb-4">Current roll weight including spool and filament.</p>
+            <input
+              type="number"
+              value={recalibrateWeight}
+              onChange={e => setRecalibrateWeight(e.target.value === "" ? "" : Number(e.target.value))}
+              className="w-full rounded-lg px-3 py-2 text-sm"
+              style={{ background: "var(--input)", border: "1px solid var(--border)" }}
+              placeholder="Current weight (g)"
+            />
+            <div className="flex gap-3 mt-5">
+              <button onClick={() => setRecalibrateTarget(null)} className="flex-1 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-all">Cancel</button>
+              <button
+                onClick={async () => {
+                  if (recalibrateWeight === "") return toast.error("Weight required");
+                  try {
+                    await recalibrateFilament(recalibrateTarget.id, Number(recalibrateWeight));
+                    toast.success("Spool recalibrated");
+                    setRecalibrateTarget(null);
+                  } catch (err) {
+                    toast.error(err instanceof Error ? err.message : "Failed to recalibrate");
+                  }
+                }}
+                className="flex-1 py-2 rounded-lg text-sm font-semibold transition-all hover:opacity-90"
+                style={{ background: "var(--gold)", color: "oklch(0.10 0.005 240)" }}
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+function DetailSection({ title, rows, linkValue }: { title: string; rows: [string, unknown][]; linkValue?: string }) {
+  return (
+    <section className="rounded-xl border p-4" style={{ background: "var(--secondary)", borderColor: "var(--border)" }}>
+      <h3 className="text-sm font-semibold mb-3">{title}</h3>
+      <div className="space-y-2">
+        {rows.map(([label, value]) => (
+          <div key={label} className="grid grid-cols-[110px_1fr] gap-3 text-sm">
+            <span className="text-muted-foreground">{label}</span>
+            {linkValue && value === linkValue ? (
+              <a href={linkValue} target="_blank" rel="noreferrer" className="min-w-0 truncate font-medium" style={{ color: "var(--gold)" }}>{String(value)} <ExternalLink className="inline w-3 h-3" /></a>
+            ) : (
+              <span className="min-w-0 break-words font-medium">{value ? String(value) : "Not recorded"}</span>
+            )}
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }

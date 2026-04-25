@@ -5,11 +5,12 @@ import {
   ChevronLeft,
   ChevronRight,
   Cpu,
+  Info,
   FolderOpen,
   Layers,
   LogOut,
   Menu,
-  Package,
+  Printer,
   Settings,
   ShoppingCart,
   X,
@@ -19,13 +20,17 @@ import { Link, useLocation } from "wouter";
 
 const NAV_ITEMS = [
   { href: "/filaments", label: "Filaments", icon: Layers },
+  { href: "/prints", label: "Prints", icon: Printer },
   { href: "/stats", label: "Stats", icon: BarChart3 },
   { href: "/collections", label: "Collections", icon: FolderOpen },
   { href: "/alerts", label: "Alerts", icon: AlertTriangle },
   { href: "/orders", label: "Orders", icon: ShoppingCart },
   { href: "/integrations", label: "Integrations", icon: Cpu },
+  { href: "/about", label: "About", icon: Info },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
+
+type FooterModal = "privacy" | "terms" | "contact" | null;
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -36,6 +41,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const [location] = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [footerModal, setFooterModal] = useState<FooterModal>(null);
 
   if (loading) {
     return (
@@ -60,32 +66,31 @@ export default function AppLayout({ children }: AppLayoutProps) {
     <div className="flex flex-col h-full">
       {/* Logo */}
       <div className={`flex items-center gap-3 px-4 py-5 ${collapsed ? "justify-center" : ""}`}>
-        <div
-          className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-          style={{ background: "oklch(0.78 0.16 85 / 0.15)", border: "1px solid oklch(0.78 0.16 85 / 0.30)" }}
-        >
-          <Package className="w-4 h-4" style={{ color: "var(--gold)" }} />
-        </div>
+        <Link href="/filaments" onClick={onNav}>
+          <img src="/PLA-Pantry-Logo.png" alt="PLA Pantry" className="w-8 h-8 rounded-lg object-contain shrink-0" />
+        </Link>
         {!collapsed && (
-          <span className="text-base font-bold tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif", color: "var(--gold)" }}>
+          <Link href="/filaments" onClick={onNav} className="text-base font-bold tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif", color: "var(--gold)" }}>
             PLA Pantry
-          </span>
+          </Link>
         )}
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-2 pb-4 space-y-0.5 overflow-y-auto">
-        {NAV_ITEMS.map(({ href, label, icon: Icon }) => (
-          <Link key={href} href={href} onClick={onNav}>
-            <div
-              className={`nav-item ${isActive(href) ? "active" : ""} ${collapsed ? "justify-center px-2" : ""}`}
-              title={collapsed ? label : undefined}
-            >
-              <Icon className="w-4 h-4 shrink-0" />
-              {!collapsed && <span>{label}</span>}
-            </div>
-          </Link>
-        ))}
+      <nav className="flex-[1_1_auto] px-2 py-4 overflow-y-auto">
+        <div className="flex min-h-[min(620px,75vh)] flex-col justify-between gap-2">
+          {NAV_ITEMS.map(({ href, label, icon: Icon }) => (
+            <Link key={href} href={href} onClick={onNav}>
+              <div
+                className={`nav-item ${isActive(href) ? "active" : ""} ${collapsed ? "justify-center px-2" : ""}`}
+                title={collapsed ? label : undefined}
+              >
+                <Icon className="w-4 h-4 shrink-0" />
+                {!collapsed && <span>{label}</span>}
+              </div>
+            </Link>
+          ))}
+        </div>
       </nav>
 
       {/* User section */}
@@ -106,7 +111,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
               <div className="flex items-center gap-1.5">
                 <p className="text-xs truncate text-muted-foreground">{user?.email ?? ""}</p>
                 {isDevMode && (
-                  <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-1.5 py-0.5 text-[10px] font-semibold text-amber-100">
+                  <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-1.5 py-0.5 text-[10px] font-semibold" style={{ color: "var(--auth-dev-text)" }}>
                     Dev Mode
                   </span>
                 )}
@@ -182,16 +187,66 @@ export default function AppLayout({ children }: AppLayoutProps) {
           >
             <Menu className="w-5 h-5" />
           </button>
-          <span className="font-bold text-sm" style={{ fontFamily: "'Space Grotesk', sans-serif", color: "var(--gold)" }}>
+          <Link href="/filaments" className="flex items-center gap-2 font-bold text-sm" style={{ fontFamily: "'Space Grotesk', sans-serif", color: "var(--gold)" }}>
+            <img src="/PLA-Pantry-Logo.png" alt="" className="w-6 h-6 rounded-md object-contain" />
             PLA Pantry
-          </span>
+          </Link>
         </header>
 
         {/* Page content */}
         <main className="flex-1 overflow-y-auto">
-          {children}
+          <div key={location} className="page-transition min-h-full flex flex-col">
+            {children}
+            <footer className="mt-auto border-t px-4 py-4 text-xs text-muted-foreground sm:px-6" style={{ borderColor: "var(--border)", background: "var(--background)" }}>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <span>© 2026 PLA Pantry. All rights reserved.</span>
+                <div className="flex gap-4">
+                  <button className="hover:text-foreground" onClick={() => setFooterModal("privacy")}>Privacy</button>
+                  <button className="hover:text-foreground" onClick={() => setFooterModal("terms")}>Terms</button>
+                  <button className="hover:text-foreground" onClick={() => setFooterModal("contact")}>Contact</button>
+                </div>
+              </div>
+            </footer>
+          </div>
         </main>
       </div>
+      {footerModal && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-fade-in" onClick={() => setFooterModal(null)} />
+          <div className="relative z-10 mx-4 w-full max-w-lg rounded-2xl border p-6 shadow-2xl animate-scale-in" style={{ background: "var(--card)", borderColor: "var(--border)" }}>
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <h2 className="text-lg font-semibold">
+                {footerModal === "privacy" ? "Privacy" : footerModal === "terms" ? "Terms" : "Contact"}
+              </h2>
+              <button onClick={() => setFooterModal(null)} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            {footerModal === "privacy" && (
+              <div className="space-y-3 text-sm leading-6 text-muted-foreground">
+                <p>PLA Pantry stores account data needed to sign you in and identify your workspace.</p>
+                <p>Your filament inventory, print logs, quick-print templates, and related settings are stored so the app can sync your maker workflow across devices.</p>
+                <p>Authentication is handled through Supabase. PLA Pantry does not sell personal data. Access to inventory data is limited by account-based security rules.</p>
+                <p>This placeholder policy will be replaced with a full legal policy before broad public launch.</p>
+              </div>
+            )}
+            {footerModal === "terms" && (
+              <div className="space-y-3 text-sm leading-6 text-muted-foreground">
+                <p>PLA Pantry is provided as an inventory and workflow tool for 3D printing materials and print records.</p>
+                <p>The app is provided without warranty. Users are responsible for checking material condition, print settings, printer safety, and final print outcomes.</p>
+                <p>Users are responsible for their account activity and for keeping their data accurate. Do not upload unlawful, harmful, or misleading content.</p>
+                <p>These placeholder terms will be replaced with full legal terms before broad public launch.</p>
+              </div>
+            )}
+            {footerModal === "contact" && (
+              <p className="text-sm text-muted-foreground">Coming soon.</p>
+            )}
+            <button onClick={() => setFooterModal(null)} className="mt-6 w-full rounded-lg px-4 py-2 text-sm font-semibold" style={{ background: "var(--gold)", color: "oklch(0.10 0.005 240)" }}>
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

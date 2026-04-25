@@ -52,6 +52,7 @@ type AuthContextValue = {
   signInWithApple: () => Promise<void>;
   signOut: () => Promise<void>;
   continueInDevMode: () => Promise<void>;
+  refreshSession: () => Promise<SupabaseSession | null>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -233,6 +234,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [applySession, navigate]);
 
+  const refreshSession = useCallback(async () => {
+    if (!supabase) return null;
+    try {
+      const { data, error } = await supabase.auth.refreshSession();
+      if (error) throw error;
+      applySession(data.session);
+      return data.session;
+    } catch {
+      if (typeof window !== "undefined") {
+        window.sessionStorage.setItem("pla-pantry-auth-message", "Your session expired. Please sign in again.");
+      }
+      await signOut();
+      throw new Error("Your session expired. Please sign in again.");
+    }
+  }, [applySession, signOut]);
+
   const continueInDevMode = useCallback(async () => {
     if (!supabaseConfig.enableDevLogin) {
       throw new Error("Dev login is disabled. Set VITE_ENABLE_DEV_LOGIN=true to enable it locally.");
@@ -263,6 +280,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signInWithApple: () => signInWithProvider("apple"),
       signOut,
       continueInDevMode,
+      refreshSession,
     }),
     [
       user,
@@ -274,6 +292,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signInWithProvider,
       signOut,
       continueInDevMode,
+      refreshSession,
     ]
   );
 

@@ -17,6 +17,8 @@ import IntegrationsPage from "./pages/IntegrationsPage";
 import SettingsPage from "./pages/SettingsPage";
 import LoginPage from "./pages/LoginPage";
 import SignUpPage from "./pages/SignUpPage";
+import PrintsPage from "./pages/PrintsPage";
+import AboutPage from "./pages/AboutPage";
 
 function ProtectedApp() {
   return (
@@ -25,11 +27,13 @@ function ProtectedApp() {
         <Switch>
           <Route path="/" component={FilamentsPage} />
           <Route path="/filaments" component={FilamentsPage} />
+          <Route path="/prints" component={PrintsPage} />
           <Route path="/stats" component={StatsPage} />
           <Route path="/collections" component={CollectionsPage} />
           <Route path="/alerts" component={AlertsPage} />
           <Route path="/orders" component={OrdersPage} />
           <Route path="/integrations" component={IntegrationsPage} />
+          <Route path="/about" component={AboutPage} />
           <Route path="/settings" component={SettingsPage} />
           <Route path="/404" component={NotFound} />
           <Route component={NotFound} />
@@ -60,7 +64,7 @@ function Router() {
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider defaultTheme="dark">
+      <ThemeProvider defaultTheme="dark" switchable>
         <TooltipProvider>
           <AuthProvider>
             <Toaster

@@ -203,6 +203,22 @@ function createSupabaseAuthClient() {
         return { error: null };
       },
 
+      async refreshSession() {
+        const session = readStoredSession();
+        if (!session?.refresh_token) {
+          throw new Error("No refresh token available.");
+        }
+        const response = await fetch(authUrl("/token?grant_type=refresh_token"), {
+          method: "POST",
+          headers: authHeaders(),
+          body: JSON.stringify({ refresh_token: session.refresh_token }),
+        });
+        const refreshed = await parseResponse<SupabaseSession>(response);
+        storeSession(refreshed);
+        emit("TOKEN_REFRESHED", refreshed);
+        return { data: { session: refreshed }, error: null };
+      },
+
       onAuthStateChange(callback: AuthChangeCallback) {
         listeners.add(callback);
         return {

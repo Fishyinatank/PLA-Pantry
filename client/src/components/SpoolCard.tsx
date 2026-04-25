@@ -2,14 +2,17 @@ import { AlertTriangle, Edit2, MoreVertical, Trash2 } from "lucide-react";
 import { useState } from "react";
 import type { FilamentRecord } from "@/lib/filamentStore";
 import { LOW_STOCK_THRESHOLD } from "@/lib/filamentData";
+import SpoolViz from "@/components/SpoolViz";
 
 interface SpoolCardProps {
   filament: FilamentRecord;
   onEdit: (f: FilamentRecord) => void;
   onDelete: (id: number) => void;
+  onRecalibrate: (f: FilamentRecord) => void;
+  onOpenDetails?: (f: FilamentRecord) => void;
 }
 
-export default function SpoolCard({ filament, onEdit, onDelete }: SpoolCardProps) {
+export default function SpoolCard({ filament, onEdit, onDelete, onRecalibrate, onOpenDetails }: SpoolCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const remaining = filament.remainingPercent !== null ? Number(filament.remainingPercent) : null;
@@ -27,6 +30,9 @@ export default function SpoolCard({ filament, onEdit, onDelete }: SpoolCardProps
     <div
       className="card-hover relative rounded-xl border overflow-hidden group"
       style={{ background: "var(--card)", borderColor: "var(--border)" }}
+      onClick={() => onOpenDetails?.(filament)}
+      role={onOpenDetails ? "button" : undefined}
+      tabIndex={onOpenDetails ? 0 : undefined}
     >
       {/* Color band top */}
       <div className="h-1.5 w-full" style={{ background: hex }} />
@@ -34,23 +40,8 @@ export default function SpoolCard({ filament, onEdit, onDelete }: SpoolCardProps
       <div className="p-4">
         {/* Header row */}
         <div className="flex items-start justify-between gap-2 mb-3">
-          {/* Spool circle */}
           <div className="flex items-center gap-3 min-w-0">
-            <div className="relative shrink-0">
-              <div
-                className="w-12 h-12 rounded-full flex items-center justify-center"
-                style={{
-                  background: `radial-gradient(circle at 35% 35%, ${hex}cc, ${hex}88)`,
-                  boxShadow: `0 0 0 2px oklch(0 0 0 / 0.3), 0 0 12px ${hex}44`,
-                  border: `2px solid ${hex}66`,
-                }}
-              >
-                <div
-                  className="w-4 h-4 rounded-full"
-                  style={{ background: "oklch(0.12 0.007 240)", border: "2px solid oklch(0.25 0.008 240 / 0.8)" }}
-                />
-              </div>
-            </div>
+            <SpoolViz filament={filament} />
 
             <div className="min-w-0">
               <p className="text-xs font-medium text-muted-foreground truncate">{filament.brand}</p>
@@ -79,26 +70,26 @@ export default function SpoolCard({ filament, onEdit, onDelete }: SpoolCardProps
           {/* Menu */}
           <div className="relative shrink-0">
             <button
-              onClick={() => setMenuOpen(!menuOpen)}
+              onClick={(event) => { event.stopPropagation(); setMenuOpen(!menuOpen); }}
               className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all hover:bg-accent text-muted-foreground hover:text-foreground"
             >
               <MoreVertical className="w-3.5 h-3.5" />
             </button>
             {menuOpen && (
               <>
-                <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
+                <div className="fixed inset-0 z-10" onClick={(event) => { event.stopPropagation(); setMenuOpen(false); }} />
                 <div
                   className="absolute right-0 top-8 z-20 min-w-[120px] rounded-lg py-1 shadow-lg animate-scale-in"
                   style={{ background: "var(--popover)", border: "1px solid var(--border)" }}
                 >
                   <button
-                    onClick={() => { setMenuOpen(false); onEdit(filament); }}
+                    onClick={(event) => { event.stopPropagation(); setMenuOpen(false); onEdit(filament); }}
                     className="flex items-center gap-2 w-full px-3 py-2 text-sm text-foreground hover:bg-accent transition-colors"
                   >
                     <Edit2 className="w-3.5 h-3.5" /> Edit
                   </button>
                   <button
-                    onClick={() => { setMenuOpen(false); onDelete(filament.id); }}
+                    onClick={(event) => { event.stopPropagation(); setMenuOpen(false); onDelete(filament.id); }}
                     className="flex items-center gap-2 w-full px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
                   >
                     <Trash2 className="w-3.5 h-3.5" /> Delete
@@ -150,6 +141,13 @@ export default function SpoolCard({ filament, onEdit, onDelete }: SpoolCardProps
             <span className="text-xs text-muted-foreground">{Number(filament.advertisedWeight) >= 1000 ? `${Number(filament.advertisedWeight) / 1000}kg` : `${filament.advertisedWeight}g`}</span>
           )}
         </div>
+        <button
+          onClick={(event) => { event.stopPropagation(); onRecalibrate(filament); }}
+          className="mt-3 w-full rounded-lg px-3 py-1.5 text-xs font-semibold transition hover:bg-accent"
+          style={{ border: "1px solid var(--border)", color: "var(--gold)" }}
+        >
+          Recalibrate
+        </button>
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { AlertCircle, Apple, Loader2, Lock, Mail, Package } from "lucide-react";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { Link } from "wouter";
 
 function AuthShell({ children }: { children: React.ReactNode }) {
@@ -8,16 +8,12 @@ function AuthShell({ children }: { children: React.ReactNode }) {
     <main className="relative min-h-screen overflow-hidden bg-background px-4 py-8 text-foreground">
       <div
         className="absolute inset-0 opacity-45"
-        style={{
-          background:
-            "radial-gradient(circle at 50% 0%, oklch(0.78 0.16 85 / 0.18), transparent 34%), linear-gradient(135deg, oklch(0.10 0.005 240), oklch(0.15 0.012 240))",
-        }}
+        style={{ background: "var(--auth-gradient)" }}
       />
       <div
         className="absolute inset-0 opacity-[0.11]"
         style={{
-          backgroundImage:
-            "radial-gradient(oklch(0.96 0.005 240) 1px, transparent 1px)",
+          backgroundImage: "var(--auth-dot)",
           backgroundSize: "22px 22px",
         }}
       />
@@ -51,7 +47,16 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [busyAction, setBusyAction] = useState<string | null>(null);
+
+  useEffect(() => {
+    const message = window.sessionStorage.getItem("pla-pantry-auth-message");
+    if (message) {
+      setNotice(message);
+      window.sessionStorage.removeItem("pla-pantry-auth-message");
+    }
+  }, []);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -85,11 +90,11 @@ export default function LoginPage() {
   return (
     <AuthShell>
       <section
-        className="w-full max-w-[440px] rounded-2xl border p-6 shadow-2xl backdrop-blur-xl sm:p-8"
+        className="w-full max-w-[440px] rounded-2xl border p-6 shadow-2xl backdrop-blur-xl sm:p-8 page-transition"
         style={{
-          background: "oklch(0.13 0.008 240 / 0.88)",
-          borderColor: "oklch(0.78 0.16 85 / 0.22)",
-          boxShadow: "0 24px 80px oklch(0 0 0 / 0.42)",
+          background: "var(--auth-card-bg)",
+          borderColor: "var(--auth-card-border)",
+          boxShadow: "var(--auth-card-shadow)",
         }}
       >
         <div className="mb-7 flex flex-col items-center text-center">
@@ -109,14 +114,21 @@ export default function LoginPage() {
         </div>
 
         {providerNotice && (
-          <div className="mb-4 flex gap-2 rounded-lg border border-amber-400/20 bg-amber-400/10 p-3 text-xs text-amber-100">
+          <div className="mb-4 flex gap-2 rounded-lg border border-amber-400/20 bg-amber-400/10 p-3 text-xs" style={{ color: "var(--auth-warning-text)" }}>
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
             <span>{providerNotice}</span>
           </div>
         )}
 
+        {notice && (
+          <div className="mb-4 flex gap-2 rounded-lg border border-amber-400/20 bg-amber-400/10 p-3 text-xs" style={{ color: "var(--auth-warning-text)" }}>
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>{notice}</span>
+          </div>
+        )}
+
         {error && (
-          <div className="mb-4 flex gap-2 rounded-lg border border-red-400/20 bg-red-400/10 p-3 text-xs text-red-100">
+          <div className="mb-4 flex gap-2 rounded-lg border border-red-400/20 bg-red-400/10 p-3 text-xs" style={{ color: "var(--auth-error-text)" }}>
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
             <span>{error}</span>
           </div>
@@ -194,7 +206,8 @@ export default function LoginPage() {
               type="button"
               onClick={() => run("dev", continueInDevMode)}
               disabled={busyAction !== null}
-              className="flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-amber-400/30 bg-amber-400/10 text-sm font-semibold text-amber-100 transition hover:bg-amber-400/15 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-amber-400/30 bg-amber-400/10 text-sm font-semibold transition hover:bg-amber-400/15 disabled:cursor-not-allowed disabled:opacity-50"
+              style={{ color: "var(--auth-dev-text)" }}
             >
               {busyAction === "dev" && <Loader2 className="h-4 w-4 animate-spin" />}
               Continue in Dev Mode

@@ -35,6 +35,8 @@ const FIELD_STYLE = {
 
 const LABEL_STYLE = "block text-xs font-medium text-muted-foreground mb-1.5";
 
+type SidePanel = "brand" | "color" | "spoolType" | "spoolMaterial" | null;
+
 export default function AddEditSpoolModal({
   open,
   editTarget,
@@ -64,9 +66,22 @@ export default function AddEditSpoolModal({
   const [supplier, setSupplier] = useState("");
   const [storageLocation, setStorageLocation] = useState("");
   const [isDryBox, setIsDryBox] = useState(false);
-  const [colorPanelOpen, setColorPanelOpen] = useState(false);
+  const [spoolCondition, setSpoolCondition] = useState<"new" | "used" | null>(null);
+  const [freshSpoolCount, setFreshSpoolCount] = useState<number | "">(1);
+  const [maxVolumetricFlow, setMaxVolumetricFlow] = useState<number | "">("");
+  const [pressureAdvance, setPressureAdvance] = useState<number | "">("");
+  const [nozzleTempMin, setNozzleTempMin] = useState<number | "">("");
+  const [nozzleTempMax, setNozzleTempMax] = useState<number | "">("");
+  const [bedTemp, setBedTemp] = useState<number | "">("");
+  const [chamberTemp, setChamberTemp] = useState<number | "">("");
+  const [coolingFanPercent, setCoolingFanPercent] = useState<number | "">("");
+  const [recommendedSpeed, setRecommendedSpeed] = useState<number | "">("");
+  const [dryingTemp, setDryingTemp] = useState<number | "">("");
+  const [dryingTime, setDryingTime] = useState("");
+  const [slicerNotes, setSlicerNotes] = useState("");
+  const [sidePanel, setSidePanel] = useState<SidePanel>(null);
   const [hexInput, setHexInput] = useState("#888888");
-  const [activeTab, setActiveTab] = useState<"basic" | "weight" | "details">("basic");
+  const [activeTab, setActiveTab] = useState<"basic" | "weight" | "details" | "print">("basic");
 
   const brandInputRef = useRef<HTMLInputElement>(null);
 
@@ -92,6 +107,19 @@ export default function AddEditSpoolModal({
       setSupplier(editTarget.supplier ?? "");
       setStorageLocation(editTarget.storageLocation ?? "");
       setIsDryBox(editTarget.isDryBox ?? false);
+      setSpoolCondition("used");
+      setFreshSpoolCount(1);
+      setMaxVolumetricFlow(editTarget.maxVolumetricFlow ? Number(editTarget.maxVolumetricFlow) : "");
+      setPressureAdvance(editTarget.pressureAdvance ? Number(editTarget.pressureAdvance) : "");
+      setNozzleTempMin(editTarget.nozzleTempMin ?? "");
+      setNozzleTempMax(editTarget.nozzleTempMax ?? "");
+      setBedTemp(editTarget.bedTemp ?? "");
+      setChamberTemp(editTarget.chamberTemp ?? "");
+      setCoolingFanPercent(editTarget.coolingFanPercent ?? "");
+      setRecommendedSpeed(editTarget.recommendedSpeed ?? "");
+      setDryingTemp(editTarget.dryingTemp ?? "");
+      setDryingTime(editTarget.dryingTime ?? "");
+      setSlicerNotes(editTarget.slicerNotes ?? "");
       setHexInput(editTarget.colorHex);
     } else {
       setBrand(""); setBrandSearch(""); setProductLine(""); setMaterialFamily("PLA"); setMaterialSubtype("");
@@ -99,9 +127,13 @@ export default function AddEditSpoolModal({
       setSpoolMaterial("Plastic"); setMeasurementMethod("empty_spool"); setEmptySpoolWeight("");
       setFullSpoolWeight(""); setCurrentTotalWeight(""); setNotes(""); setPurchaseLink("");
       setSupplier(""); setStorageLocation(""); setIsDryBox(false); setHexInput("#888888");
+      setSpoolCondition(null); setFreshSpoolCount(1);
+      setMaxVolumetricFlow(""); setPressureAdvance(""); setNozzleTempMin(""); setNozzleTempMax("");
+      setBedTemp(""); setChamberTemp(""); setCoolingFanPercent(""); setRecommendedSpeed("");
+      setDryingTemp(""); setDryingTime(""); setSlicerNotes("");
     }
     setActiveTab("basic");
-    setColorPanelOpen(false);
+    setSidePanel(null);
   }, [editTarget, open]);
 
   // Calculated preview
@@ -109,6 +141,9 @@ export default function AddEditSpoolModal({
     const adv = advertisedWeight !== "" ? Number(advertisedWeight) : null;
     const cur = currentTotalWeight !== "" ? Number(currentTotalWeight) : null;
     if (cur === null) return null;
+    if (spoolCondition === "new" && adv) {
+      return { grams: Math.round(adv), pct: 100 };
+    }
     if (measurementMethod === "empty_spool" && emptySpoolWeight !== "") {
       const rem = Math.max(0, cur - Number(emptySpoolWeight));
       const pct = adv ? Math.min(100, Math.round((rem / adv) * 100)) : null;
@@ -124,11 +159,19 @@ export default function AddEditSpoolModal({
   };
   const preview = calcRemaining();
 
-  const filteredBrands = BRANDS.filter(b => b.toLowerCase().includes(brandSearch.toLowerCase()));
+  const filteredBrands = [...BRANDS].sort((a, b) => a.localeCompare(b)).filter(b => b.toLowerCase().includes(brandSearch.toLowerCase()));
   const subtypes = MATERIAL_SUBTYPES[materialFamily] ?? ["Standard"];
 
   const handleSave = async () => {
     if (!brand.trim()) { toast.error("Brand is required"); return; }
+    const adv = advertisedWeight !== "" ? Number(advertisedWeight) : undefined;
+    const cur = currentTotalWeight !== "" ? Number(currentTotalWeight) : undefined;
+    if (spoolCondition === "new" && (!adv || cur === undefined)) {
+      toast.error("Advertised weight and total weight are required.");
+      return;
+    }
+    const isNewSpool = spoolCondition === "new" && !editTarget;
+    const calculatedEmptyWeight = isNewSpool && adv !== undefined && cur !== undefined ? Math.max(0, cur - adv) : undefined;
     const payload: FilamentInput = {
       brand: brand.trim(),
       productLine: productLine || undefined,
@@ -136,18 +179,29 @@ export default function AddEditSpoolModal({
       materialSubtype: materialSubtype || undefined,
       colorHex,
       colorName: colorName || undefined,
-      advertisedWeight: advertisedWeight !== "" ? Number(advertisedWeight) : undefined,
+      advertisedWeight: adv,
       spoolType: spoolType || undefined,
       spoolMaterial: spoolMaterial || undefined,
-      measurementMethod,
-      emptySpoolWeight: emptySpoolWeight !== "" ? Number(emptySpoolWeight) : undefined,
-      fullSpoolWeight: fullSpoolWeight !== "" ? Number(fullSpoolWeight) : undefined,
-      currentTotalWeight: currentTotalWeight !== "" ? Number(currentTotalWeight) : undefined,
+      measurementMethod: isNewSpool ? "empty_spool" : measurementMethod,
+      emptySpoolWeight: isNewSpool ? calculatedEmptyWeight : emptySpoolWeight !== "" ? Number(emptySpoolWeight) : undefined,
+      fullSpoolWeight: isNewSpool ? undefined : fullSpoolWeight !== "" ? Number(fullSpoolWeight) : undefined,
+      currentTotalWeight: cur,
       notes: notes || undefined,
       purchaseLink: purchaseLink || undefined,
       supplier: supplier || undefined,
       storageLocation: storageLocation || undefined,
       isDryBox,
+      maxVolumetricFlow: maxVolumetricFlow !== "" ? Number(maxVolumetricFlow) : undefined,
+      pressureAdvance: pressureAdvance !== "" ? Number(pressureAdvance) : undefined,
+      nozzleTempMin: nozzleTempMin !== "" ? Number(nozzleTempMin) : undefined,
+      nozzleTempMax: nozzleTempMax !== "" ? Number(nozzleTempMax) : undefined,
+      bedTemp: bedTemp !== "" ? Number(bedTemp) : undefined,
+      chamberTemp: chamberTemp !== "" ? Number(chamberTemp) : undefined,
+      coolingFanPercent: coolingFanPercent !== "" ? Number(coolingFanPercent) : undefined,
+      recommendedSpeed: recommendedSpeed !== "" ? Number(recommendedSpeed) : undefined,
+      dryingTemp: dryingTemp !== "" ? Number(dryingTemp) : undefined,
+      dryingTime: dryingTime || undefined,
+      slicerNotes: slicerNotes || undefined,
     };
     try {
       setSaving(true);
@@ -155,7 +209,10 @@ export default function AddEditSpoolModal({
         await onUpdate(editTarget.id, payload);
         toast.success("Spool updated!");
       } else {
-        await onCreate(payload);
+        const count = spoolCondition === "new" ? Number(freshSpoolCount || 1) : 1;
+        for (let i = 0; i < Math.max(1, count); i++) {
+          await onCreate(payload);
+        }
         toast.success("Spool saved!");
       }
       onSaved();
@@ -171,6 +228,30 @@ export default function AddEditSpoolModal({
 
   if (!open) return null;
 
+  if (!editTarget && !spoolCondition) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-fade-in" onClick={onClose} />
+        <div className="relative z-10 w-full max-w-sm rounded-2xl p-5 shadow-2xl animate-scale-in" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-base font-semibold">Add Spool</h2>
+            <button onClick={onClose} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent"><X className="w-4 h-4" /></button>
+          </div>
+          <div className="grid gap-3">
+            <button onClick={() => setSpoolCondition("new")} className="rounded-xl p-4 text-left transition hover:bg-accent" style={{ background: "var(--secondary)", border: "1px solid var(--border)" }}>
+              <p className="font-semibold text-foreground">New spool</p>
+              <p className="text-xs text-muted-foreground mt-1">Fresh sealed or unused spool.</p>
+            </button>
+            <button onClick={() => setSpoolCondition("used")} className="rounded-xl p-4 text-left transition hover:bg-accent" style={{ background: "var(--secondary)", border: "1px solid var(--border)" }}>
+              <p className="font-semibold text-foreground">Used spool</p>
+              <p className="text-xs text-muted-foreground mt-1">Existing spool with current weight.</p>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
@@ -179,10 +260,10 @@ export default function AddEditSpoolModal({
         onClick={onClose}
       />
 
-      <div className="relative z-10 flex gap-0 animate-scale-in max-h-[90vh] w-full max-w-lg mx-4">
+      <div className="relative z-10 animate-scale-in max-h-[90vh] w-full max-w-lg mx-4">
         {/* Main Modal */}
         <div
-          className="flex-1 flex flex-col rounded-2xl overflow-hidden shadow-2xl"
+          className="w-full flex flex-col rounded-2xl overflow-hidden shadow-2xl"
           style={{ background: "var(--card)", border: "1px solid var(--border)" }}
         >
           {/* Header */}
@@ -208,10 +289,10 @@ export default function AddEditSpoolModal({
 
           {/* Tabs */}
           <div className="flex border-b" style={{ borderColor: "var(--border)" }}>
-            {(["basic", "weight", "details"] as const).map(tab => (
+            {(["basic", "weight", "details", "print"] as const).map(tab => (
               <button
                 key={tab}
-                onClick={() => setActiveTab(tab)}
+                onClick={() => { setActiveTab(tab); setSidePanel(null); setBrandDropOpen(false); }}
                 className="flex-1 py-2.5 text-xs font-medium capitalize transition-colors"
                 style={{
                   color: activeTab === tab ? "var(--gold)" : "var(--muted-foreground)",
@@ -219,13 +300,13 @@ export default function AddEditSpoolModal({
                   background: "transparent",
                 }}
               >
-                {tab === "basic" ? "Identity" : tab === "weight" ? "Weight" : "Details"}
+                {tab === "basic" ? "Identity" : tab === "weight" ? "Weight" : tab === "details" ? "Details" : "Print Settings"}
               </button>
             ))}
           </div>
 
           {/* Body */}
-          <div className="flex-1 overflow-y-auto p-5 space-y-4">
+          <div className="flex-1 overflow-y-auto p-5 space-y-4 min-h-[430px] transition-all duration-200">
             {activeTab === "basic" && (
               <>
                 {/* Brand */}
@@ -235,33 +316,13 @@ export default function AddEditSpoolModal({
                     <input
                       ref={brandInputRef}
                       value={brandSearch}
-                      onChange={e => { setBrandSearch(e.target.value); setBrand(e.target.value); setBrandDropOpen(true); }}
-                      onFocus={() => setBrandDropOpen(true)}
+                      onChange={e => { setBrandSearch(e.target.value); setBrand(e.target.value); setBrandDropOpen(true); setSidePanel("brand"); }}
+                      onFocus={() => { setBrandDropOpen(true); setSidePanel("brand"); }}
                       placeholder="Search or type brand…"
                       style={FIELD_STYLE}
                     />
                     <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
                   </div>
-                  {brandDropOpen && filteredBrands.length > 0 && (
-                    <>
-                      <div className="fixed inset-0 z-10" onClick={() => setBrandDropOpen(false)} />
-                      <div
-                        className="absolute top-full left-0 right-0 z-20 mt-1 max-h-48 overflow-y-auto rounded-lg shadow-lg animate-scale-in"
-                        style={{ background: "var(--popover)", border: "1px solid var(--border)" }}
-                      >
-                        {filteredBrands.map(b => (
-                          <button
-                            key={b}
-                            className="flex items-center justify-between w-full px-3 py-2 text-sm text-foreground hover:bg-accent transition-colors text-left"
-                            onClick={() => { setBrand(b); setBrandSearch(b); setBrandDropOpen(false); }}
-                          >
-                            {b}
-                            {brand === b && <Check className="w-3.5 h-3.5 text-primary" />}
-                          </button>
-                        ))}
-                      </div>
-                    </>
-                  )}
                 </div>
 
                 {/* Product Line */}
@@ -317,7 +378,7 @@ export default function AddEditSpoolModal({
                   <label className={LABEL_STYLE}>Color</label>
                   <div className="flex gap-2">
                     <button
-                      onClick={() => setColorPanelOpen(!colorPanelOpen)}
+                      onClick={() => setSidePanel(sidePanel === "color" ? null : "color")}
                       className="flex items-center gap-2.5 flex-1 px-3 py-2 rounded-lg text-sm transition-all hover:border-primary"
                       style={{ background: "var(--input)", border: "1px solid var(--border)" }}
                     >
@@ -339,6 +400,12 @@ export default function AddEditSpoolModal({
             {activeTab === "weight" && (
               <>
                 {/* Advertised weight */}
+                {spoolCondition === "new" && (
+                  <div>
+                    <label className={LABEL_STYLE}>Number of fresh spools</label>
+                    <input type="number" min={1} value={freshSpoolCount} onChange={e => setFreshSpoolCount(e.target.value === "" ? "" : Number(e.target.value))} style={FIELD_STYLE} />
+                  </div>
+                )}
                 <div>
                   <label className={LABEL_STYLE}>Advertised Spool Weight</label>
                   <div className="flex flex-wrap gap-1.5 mb-2">
@@ -370,20 +437,20 @@ export default function AddEditSpoolModal({
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className={LABEL_STYLE}>Spool Type</label>
-                    <select value={spoolType} onChange={e => setSpoolType(e.target.value)} style={FIELD_STYLE}>
-                      {SPOOL_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                    </select>
+                    <button type="button" onClick={() => { setBrandDropOpen(false); setSidePanel(sidePanel === "spoolType" ? null : "spoolType"); }} className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm" style={FIELD_STYLE}>
+                      <span>{spoolType}</span><ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+                    </button>
                   </div>
                   <div>
                     <label className={LABEL_STYLE}>Spool Material</label>
-                    <select value={spoolMaterial} onChange={e => setSpoolMaterial(e.target.value)} style={FIELD_STYLE}>
-                      {SPOOL_MATERIALS.map(m => <option key={m} value={m}>{m}</option>)}
-                    </select>
+                    <button type="button" onClick={() => { setBrandDropOpen(false); setSidePanel(sidePanel === "spoolMaterial" ? null : "spoolMaterial"); }} className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm" style={FIELD_STYLE}>
+                      <span>{spoolMaterial}</span><ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+                    </button>
                   </div>
                 </div>
 
                 {/* Measurement method */}
-                <div>
+                {spoolCondition !== "new" && <div>
                   <label className={LABEL_STYLE}>Measurement Method</label>
                   <div className="grid grid-cols-2 gap-2">
                     {([
@@ -404,10 +471,10 @@ export default function AddEditSpoolModal({
                       </button>
                     ))}
                   </div>
-                </div>
+                </div>}
 
                 {/* Dynamic weight fields */}
-                {measurementMethod === "empty_spool" ? (
+                {spoolCondition !== "new" && (measurementMethod === "empty_spool" ? (
                   <div>
                     <label className={LABEL_STYLE}>Empty Spool Weight (g)</label>
                     <input
@@ -429,11 +496,11 @@ export default function AddEditSpoolModal({
                       style={FIELD_STYLE}
                     />
                   </div>
-                )}
+                ))}
 
                 {/* Current total weight */}
                 <div>
-                  <label className={LABEL_STYLE}>Current Total Weight (g) — weigh the spool now</label>
+                  <label className={LABEL_STYLE}>{spoolCondition === "new" ? "Total weight including spool and filament (g)" : "Current Total Weight (g) — weigh the spool now"}</label>
                   <input
                     type="number"
                     value={currentTotalWeight}
@@ -505,6 +572,27 @@ export default function AddEditSpoolModal({
                 </div>
               </>
             )}
+
+            {activeTab === "print" && (
+              <div className="space-y-3 animate-fade-in">
+                <div className="grid grid-cols-2 gap-3">
+                  <div><label className={LABEL_STYLE}>Max volumetric flow</label><input type="number" value={maxVolumetricFlow} onChange={e => setMaxVolumetricFlow(e.target.value === "" ? "" : Number(e.target.value))} style={FIELD_STYLE} /></div>
+                  <div><label className={LABEL_STYLE}>Pressure advance</label><input type="number" value={pressureAdvance} onChange={e => setPressureAdvance(e.target.value === "" ? "" : Number(e.target.value))} style={FIELD_STYLE} /></div>
+                  <div><label className={LABEL_STYLE}>Nozzle min</label><input type="number" value={nozzleTempMin} onChange={e => setNozzleTempMin(e.target.value === "" ? "" : Number(e.target.value))} style={FIELD_STYLE} /></div>
+                  <div><label className={LABEL_STYLE}>Nozzle max</label><input type="number" value={nozzleTempMax} onChange={e => setNozzleTempMax(e.target.value === "" ? "" : Number(e.target.value))} style={FIELD_STYLE} /></div>
+                  <div><label className={LABEL_STYLE}>Bed temp</label><input type="number" value={bedTemp} onChange={e => setBedTemp(e.target.value === "" ? "" : Number(e.target.value))} style={FIELD_STYLE} /></div>
+                  <div><label className={LABEL_STYLE}>Chamber temp</label><input type="number" value={chamberTemp} onChange={e => setChamberTemp(e.target.value === "" ? "" : Number(e.target.value))} style={FIELD_STYLE} /></div>
+                  <div><label className={LABEL_STYLE}>Cooling fan %</label><input type="number" value={coolingFanPercent} onChange={e => setCoolingFanPercent(e.target.value === "" ? "" : Number(e.target.value))} style={FIELD_STYLE} /></div>
+                  <div><label className={LABEL_STYLE}>Recommended speed</label><input type="number" value={recommendedSpeed} onChange={e => setRecommendedSpeed(e.target.value === "" ? "" : Number(e.target.value))} style={FIELD_STYLE} /></div>
+                  <div><label className={LABEL_STYLE}>Drying temp</label><input type="number" value={dryingTemp} onChange={e => setDryingTemp(e.target.value === "" ? "" : Number(e.target.value))} style={FIELD_STYLE} /></div>
+                  <div><label className={LABEL_STYLE}>Drying time</label><input value={dryingTime} onChange={e => setDryingTime(e.target.value)} placeholder="e.g. 6h" style={FIELD_STYLE} /></div>
+                </div>
+                <div>
+                  <label className={LABEL_STYLE}>Slicer profile notes</label>
+                  <textarea value={slicerNotes} onChange={e => setSlicerNotes(e.target.value)} rows={3} style={{ ...FIELD_STYLE, resize: "vertical" }} />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Footer */}
@@ -526,15 +614,55 @@ export default function AddEditSpoolModal({
           </div>
         </div>
 
-        {/* Color Panel — slides in from right */}
-        {colorPanelOpen && (
+        {/* Side panels */}
+        {sidePanel === "brand" && brandDropOpen && filteredBrands.length > 0 && (
           <div
-            className="w-64 rounded-2xl ml-2 flex flex-col overflow-hidden shadow-2xl animate-slide-right"
-            style={{ background: "var(--card)", border: "1px solid var(--border)" }}
+            className="fixed bottom-4 left-4 right-4 z-30 max-h-[45vh] overflow-hidden rounded-2xl shadow-2xl animate-slide-up lg:absolute lg:bottom-auto lg:left-1/2 lg:right-auto lg:top-1/2 lg:h-[560px] lg:w-72 lg:max-h-[90vh] lg:-translate-y-1/2 lg:translate-x-[17.5rem] lg:animate-slide-right"
+            style={{ background: "var(--surface-raised)", border: "1px solid var(--border)" }}
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
+              <span className="text-sm font-semibold text-foreground">Choose Brand</span>
+              <button onClick={() => { setBrandDropOpen(false); setSidePanel(null); }} className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <div className="h-full overflow-y-auto p-2">
+              {filteredBrands.map(b => (
+                <button
+                  key={b}
+                  className="flex items-center justify-between w-full rounded-lg px-3 py-2 text-sm text-foreground hover:bg-accent transition-colors text-left"
+                  onClick={() => { setBrand(b); setBrandSearch(b); setBrandDropOpen(false); setSidePanel(null); }}
+                >
+                  {b}
+                  {brand === b && <Check className="w-3.5 h-3.5 text-primary" />}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {sidePanel === "spoolType" && (
+          <div className="fixed bottom-4 left-4 right-4 z-30 max-h-[45vh] overflow-hidden rounded-2xl shadow-2xl animate-slide-up lg:absolute lg:bottom-auto lg:left-1/2 lg:right-auto lg:top-1/2 lg:h-[560px] lg:w-72 lg:max-h-[90vh] lg:-translate-y-1/2 lg:translate-x-[17.5rem] lg:animate-slide-right" style={{ background: "var(--surface-raised)", border: "1px solid var(--border)" }}>
+            <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}><span className="text-sm font-semibold">Spool Type</span><button onClick={() => setSidePanel(null)} className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-accent"><X className="w-3.5 h-3.5" /></button></div>
+            <div className="overflow-y-auto p-2">{SPOOL_TYPES.map(t => <button key={t} onClick={() => { setSpoolType(t); setSidePanel(null); }} className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm hover:bg-accent">{t}{spoolType === t && <Check className="w-3.5 h-3.5 text-primary" />}</button>)}</div>
+          </div>
+        )}
+
+        {sidePanel === "spoolMaterial" && (
+          <div className="fixed bottom-4 left-4 right-4 z-30 max-h-[45vh] overflow-hidden rounded-2xl shadow-2xl animate-slide-up lg:absolute lg:bottom-auto lg:left-1/2 lg:right-auto lg:top-1/2 lg:h-[560px] lg:w-72 lg:max-h-[90vh] lg:-translate-y-1/2 lg:translate-x-[17.5rem] lg:animate-slide-right" style={{ background: "var(--surface-raised)", border: "1px solid var(--border)" }}>
+            <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}><span className="text-sm font-semibold">Spool Material</span><button onClick={() => setSidePanel(null)} className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-accent"><X className="w-3.5 h-3.5" /></button></div>
+            <div className="overflow-y-auto p-2">{SPOOL_MATERIALS.map(m => <button key={m} onClick={() => { setSpoolMaterial(m); setSidePanel(null); }} className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm hover:bg-accent">{m}{spoolMaterial === m && <Check className="w-3.5 h-3.5 text-primary" />}</button>)}</div>
+          </div>
+        )}
+
+        {sidePanel === "color" && (
+          <div
+            className="fixed bottom-4 left-4 right-4 z-30 max-h-[45vh] rounded-2xl flex flex-col overflow-hidden shadow-2xl animate-slide-up lg:absolute lg:bottom-auto lg:left-1/2 lg:right-auto lg:top-1/2 lg:h-[560px] lg:w-72 lg:max-h-[90vh] lg:-translate-y-1/2 lg:translate-x-[17.5rem] lg:animate-slide-right"
+            style={{ background: "var(--surface-raised)", border: "1px solid var(--border)" }}
           >
             <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
               <span className="text-sm font-semibold text-foreground">Pick Color</span>
-              <button onClick={() => setColorPanelOpen(false)} className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
+              <button onClick={() => setSidePanel(null)} className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
                 <X className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -552,7 +680,7 @@ export default function AddEditSpoolModal({
                         setColorHex(c.hex);
                         setHexInput(c.hex);
                         if (!colorName) setColorName(c.name);
-                        setColorPanelOpen(false);
+                        setSidePanel(null);
                       }}
                       className="w-6 h-6 rounded-full transition-all hover:scale-110 active:scale-95"
                       style={{
@@ -596,7 +724,7 @@ export default function AddEditSpoolModal({
 
               {/* Apply */}
               <button
-                onClick={() => setColorPanelOpen(false)}
+                onClick={() => setSidePanel(null)}
                 className="w-full py-2 rounded-lg text-sm font-semibold transition-all hover:opacity-90"
                 style={{ background: "var(--gold)", color: "oklch(0.10 0.005 240)" }}
               >
