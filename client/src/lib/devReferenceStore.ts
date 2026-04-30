@@ -10,7 +10,7 @@ export type DevSubtypeRow = {
   material_families?: { name: string } | null;
 };
 
-export async function loadDevReferenceRows(token: string) {
+export async function loadDevReferenceRows(token?: string) {
   const [brands, families, subtypes] = await Promise.all([
     supabaseRequest<DevBrandRow[]>("filament_brands?select=*&order=name.asc", { token }),
     supabaseRequest<DevFamilyRow[]>("material_families?select=*&order=name.asc", { token }),

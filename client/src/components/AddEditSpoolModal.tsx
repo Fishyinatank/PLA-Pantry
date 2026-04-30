@@ -4,6 +4,7 @@ import {
   SPOOL_MATERIALS,
   SPOOL_TYPES,
 } from "@/lib/filamentData";
+import { useAuth } from "@/_core/hooks/useAuth";
 import type { FilamentInput, FilamentRecord } from "@/lib/filamentStore";
 import { useReferenceData } from "@/lib/referenceDataStore";
 import { Check, ChevronDown, Palette, X } from "lucide-react";
@@ -43,7 +44,8 @@ export default function AddEditSpoolModal({
   onCreate,
   onUpdate,
 }: AddEditSpoolModalProps) {
-  const { data: referenceData } = useReferenceData();
+  const { session } = useAuth();
+  const { data: referenceData, loading: referenceLoading, error: referenceError, reload: reloadReferenceData } = useReferenceData();
   // Form state
   const [brand, setBrand] = useState("");
   const [brandSearch, setBrandSearch] = useState("");
@@ -83,6 +85,10 @@ export default function AddEditSpoolModal({
   const [activeTab, setActiveTab] = useState<"basic" | "weight" | "details" | "print">("basic");
 
   const brandInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (open) void reloadReferenceData(session?.access_token);
+  }, [open, reloadReferenceData, session?.access_token]);
 
   // Populate form when editing
   useEffect(() => {
@@ -333,6 +339,8 @@ export default function AddEditSpoolModal({
                 {/* Material Family */}
                 <div>
                   <label className={LABEL_STYLE}>Material Family *</label>
+                  {referenceLoading && <p className="mb-2 text-xs text-muted-foreground">Loading material families…</p>}
+                  {referenceError && <p className="mb-2 text-xs" style={{ color: "var(--auth-warning-text)" }}>Using fallback material families.</p>}
                   <div className="flex flex-wrap gap-1.5">
                     {referenceData.materialFamilies.map(m => (
                       <button
@@ -349,6 +357,13 @@ export default function AddEditSpoolModal({
                       </button>
                     ))}
                   </div>
+                  <input
+                    value={materialFamily}
+                    onChange={e => { setMaterialFamily(e.target.value); setMaterialSubtype(""); }}
+                    placeholder="Custom material family"
+                    className="mt-2"
+                    style={FIELD_STYLE}
+                  />
                 </div>
 
                 {/* Subtype */}
@@ -370,6 +385,13 @@ export default function AddEditSpoolModal({
                       </button>
                     ))}
                   </div>
+                  <input
+                    value={materialSubtype}
+                    onChange={e => setMaterialSubtype(e.target.value)}
+                    placeholder="Custom subtype"
+                    className="mt-2"
+                    style={FIELD_STYLE}
+                  />
                 </div>
 
                 {/* Color */}
@@ -614,7 +636,7 @@ export default function AddEditSpoolModal({
         </div>
 
         {/* Side panels */}
-        {sidePanel === "brand" && brandDropOpen && filteredBrands.length > 0 && (
+        {sidePanel === "brand" && brandDropOpen && (
           <div
             className="fixed bottom-4 left-4 right-4 z-30 max-h-[45vh] overflow-hidden rounded-2xl shadow-2xl animate-slide-up lg:absolute lg:bottom-auto lg:left-1/2 lg:right-auto lg:top-1/2 lg:h-[560px] lg:w-72 lg:max-h-[90vh] lg:-translate-y-1/2 lg:translate-x-[17.5rem] lg:animate-slide-right"
             style={{ background: "var(--surface-raised)", border: "1px solid var(--border)" }}
@@ -626,6 +648,8 @@ export default function AddEditSpoolModal({
               </button>
             </div>
             <div className="h-full overflow-y-auto p-2">
+              {referenceLoading && <p className="px-3 py-2 text-sm text-muted-foreground">Loading brands…</p>}
+              {referenceError && <p className="px-3 py-2 text-sm" style={{ color: "var(--auth-warning-text)" }}>Using fallback brands.</p>}
               {filteredBrands.map(b => (
                 <button
                   key={b}
@@ -636,6 +660,9 @@ export default function AddEditSpoolModal({
                   {brand === b && <Check className="w-3.5 h-3.5 text-primary" />}
                 </button>
               ))}
+              {!referenceLoading && filteredBrands.length === 0 && (
+                <p className="px-3 py-2 text-sm text-muted-foreground">No matching brands. Keep typing to use a custom brand.</p>
+              )}
             </div>
           </div>
         )}
