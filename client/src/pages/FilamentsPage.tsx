@@ -107,6 +107,7 @@ export default function FilamentsPage() {
             {error && <p className="text-xs text-destructive mt-1">{error.message}</p>}
           </div>
           <button
+            data-onboarding="add-spool"
             onClick={() => { setEditTarget(null); setModalOpen(true); }}
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-90 active:scale-95"
             style={{ background: "var(--gold)", color: "oklch(0.10 0.005 240)" }}
@@ -302,7 +303,7 @@ export default function FilamentsPage() {
             )}
           </div>
         ) : viewMode === "grid" ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div data-onboarding="filament-grid" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {filtered.map(f => (
               <SpoolCard key={f.id} filament={f} onEdit={handleEdit} onDelete={handleDelete} onRecalibrate={handleRecalibrate} onOpenDetails={setDetailTarget} />
             ))}

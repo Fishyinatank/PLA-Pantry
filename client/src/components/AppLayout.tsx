@@ -1,4 +1,6 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import OnboardingTutorial from "@/components/OnboardingTutorial";
+import { OnboardingProvider } from "@/contexts/OnboardingContext";
 import { hasDevToken } from "@/lib/devToken";
 import {
   AlertTriangle,
@@ -204,19 +206,22 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
         {/* Page content */}
         <main className="flex-1 overflow-y-auto">
-          <div key={location} className="page-transition min-h-full flex flex-col">
-            {children}
-            <footer className="mt-auto border-t px-4 py-4 text-xs text-muted-foreground sm:px-6" style={{ borderColor: "var(--border)", background: "var(--background)" }}>
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <span>© 2026 PLA Pantry. All rights reserved.</span>
-                <div className="flex gap-4">
-                  <button className="hover:text-foreground" onClick={() => setFooterModal("privacy")}>Privacy</button>
-                  <button className="hover:text-foreground" onClick={() => setFooterModal("terms")}>Terms</button>
-                  <button className="hover:text-foreground" onClick={() => setFooterModal("contact")}>Contact</button>
+          <OnboardingProvider>
+            <div key={location} className="page-transition min-h-full flex flex-col">
+              {children}
+              <footer className="mt-auto border-t px-4 py-4 text-xs text-muted-foreground sm:px-6" style={{ borderColor: "var(--border)", background: "var(--background)" }}>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <span>© 2026 PLA Pantry. All rights reserved.</span>
+                  <div className="flex gap-4">
+                    <button className="hover:text-foreground" onClick={() => setFooterModal("privacy")}>Privacy</button>
+                    <button className="hover:text-foreground" onClick={() => setFooterModal("terms")}>Terms</button>
+                    <button className="hover:text-foreground" onClick={() => setFooterModal("contact")}>Contact</button>
+                  </div>
                 </div>
-              </div>
-            </footer>
-          </div>
+              </footer>
+            </div>
+            <OnboardingTutorial />
+          </OnboardingProvider>
         </main>
       </div>
       {footerModal && (

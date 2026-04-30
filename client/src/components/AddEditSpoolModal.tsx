@@ -169,6 +169,18 @@ export default function AddEditSpoolModal({
 
   const handleSave = async () => {
     if (!brand.trim()) { toast.error("Brand is required"); return; }
+    if (!referenceData.brands.includes(brand.trim())) {
+      toast.error("Choose a brand from the list.");
+      return;
+    }
+    if (!referenceData.materialFamilies.includes(materialFamily)) {
+      toast.error("Choose a material family from the list.");
+      return;
+    }
+    if (materialSubtype && !subtypes.includes(materialSubtype)) {
+      toast.error("Choose a subtype from the list.");
+      return;
+    }
     const adv = advertisedWeight !== "" ? Number(advertisedWeight) : undefined;
     const cur = currentTotalWeight !== "" ? Number(currentTotalWeight) : undefined;
     if (spoolCondition === "new" && (!adv || cur === undefined)) {
@@ -321,9 +333,9 @@ export default function AddEditSpoolModal({
                     <input
                       ref={brandInputRef}
                       value={brandSearch}
-                      onChange={e => { setBrandSearch(e.target.value); setBrand(e.target.value); setBrandDropOpen(true); setSidePanel("brand"); }}
+                      onChange={e => { setBrandSearch(e.target.value); setBrand(""); setBrandDropOpen(true); setSidePanel("brand"); }}
                       onFocus={() => { setBrandDropOpen(true); setSidePanel("brand"); }}
-                      placeholder="Search or type brand…"
+                      placeholder="Search brand…"
                       style={FIELD_STYLE}
                     />
                     <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
@@ -357,13 +369,6 @@ export default function AddEditSpoolModal({
                       </button>
                     ))}
                   </div>
-                  <input
-                    value={materialFamily}
-                    onChange={e => { setMaterialFamily(e.target.value); setMaterialSubtype(""); }}
-                    placeholder="Custom material family"
-                    className="mt-2"
-                    style={FIELD_STYLE}
-                  />
                 </div>
 
                 {/* Subtype */}
@@ -385,13 +390,6 @@ export default function AddEditSpoolModal({
                       </button>
                     ))}
                   </div>
-                  <input
-                    value={materialSubtype}
-                    onChange={e => setMaterialSubtype(e.target.value)}
-                    placeholder="Custom subtype"
-                    className="mt-2"
-                    style={FIELD_STYLE}
-                  />
                 </div>
 
                 {/* Color */}
@@ -661,7 +659,7 @@ export default function AddEditSpoolModal({
                 </button>
               ))}
               {!referenceLoading && filteredBrands.length === 0 && (
-                <p className="px-3 py-2 text-sm text-muted-foreground">No matching brands. Keep typing to use a custom brand.</p>
+                <p className="px-3 py-2 text-sm text-muted-foreground">No matching brands.</p>
               )}
             </div>
           </div>

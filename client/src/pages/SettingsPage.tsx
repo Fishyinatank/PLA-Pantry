@@ -1,14 +1,16 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import { useOnboarding } from "@/contexts/OnboardingContext";
 import { useFilaments } from "@/lib/filamentStore";
 import { hasDevToken } from "@/lib/devToken";
 import { useTheme } from "@/contexts/ThemeContext";
-import { BadgeCheck, Download, LogOut, Moon, Shield, User } from "lucide-react";
+import { BadgeCheck, Download, HelpCircle, LogOut, Moon, Shield, User } from "lucide-react";
 import { toast } from "sonner";
 
 export default function SettingsPage() {
   const { user, signOut, isDevMode } = useAuth();
   const { stats } = useFilaments();
   const { theme, toggleTheme } = useTheme();
+  const { openTutorial } = useOnboarding();
   const showDevToken = hasDevToken(user?.email);
 
   const handleExport = () => {
@@ -99,6 +101,27 @@ export default function SettingsPage() {
                 Export
               </button>
             </div>
+          </div>
+        </div>
+
+        {/* Help */}
+        <div className="rounded-xl p-5 border min-w-0" style={{ background: "var(--card)", borderColor: "var(--border)" }}>
+          <div className="flex items-center gap-2 mb-4">
+            <HelpCircle className="w-4 h-4" style={{ color: "var(--gold)" }} />
+            <h3 className="text-sm font-semibold text-foreground">Tutorial</h3>
+          </div>
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm text-foreground">Replay Tutorial</p>
+              <p className="text-xs text-muted-foreground">Walk through PLA Pantry again</p>
+            </div>
+            <button
+              onClick={openTutorial}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:opacity-90"
+              style={{ background: "var(--gold)", color: "oklch(0.10 0.005 240)" }}
+            >
+              Replay
+            </button>
           </div>
         </div>
 
