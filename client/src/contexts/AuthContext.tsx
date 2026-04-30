@@ -221,6 +221,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       if (typeof window !== "undefined") {
         window.localStorage.removeItem(DEV_SESSION_KEY);
+        window.sessionStorage.removeItem("pla-pantry-dev-confirmed-email");
       }
       if (supabase && getAuthAccessToken()) {
         const { error } = await supabase.auth.signOut();

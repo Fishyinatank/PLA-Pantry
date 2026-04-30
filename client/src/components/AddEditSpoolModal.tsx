@@ -1,13 +1,11 @@
 import {
   ADVERTISED_WEIGHTS,
-  BRANDS,
   COLOR_PRESETS,
-  MATERIAL_FAMILIES,
-  MATERIAL_SUBTYPES,
   SPOOL_MATERIALS,
   SPOOL_TYPES,
 } from "@/lib/filamentData";
 import type { FilamentInput, FilamentRecord } from "@/lib/filamentStore";
+import { useReferenceData } from "@/lib/referenceDataStore";
 import { Check, ChevronDown, Palette, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -45,6 +43,7 @@ export default function AddEditSpoolModal({
   onCreate,
   onUpdate,
 }: AddEditSpoolModalProps) {
+  const { data: referenceData } = useReferenceData();
   // Form state
   const [brand, setBrand] = useState("");
   const [brandSearch, setBrandSearch] = useState("");
@@ -159,8 +158,8 @@ export default function AddEditSpoolModal({
   };
   const preview = calcRemaining();
 
-  const filteredBrands = [...BRANDS].sort((a, b) => a.localeCompare(b)).filter(b => b.toLowerCase().includes(brandSearch.toLowerCase()));
-  const subtypes = MATERIAL_SUBTYPES[materialFamily] ?? ["Standard"];
+  const filteredBrands = referenceData.brands.filter(b => b.toLowerCase().includes(brandSearch.toLowerCase()));
+  const subtypes = referenceData.materialSubtypes[materialFamily] ?? ["Standard"];
 
   const handleSave = async () => {
     if (!brand.trim()) { toast.error("Brand is required"); return; }
@@ -335,7 +334,7 @@ export default function AddEditSpoolModal({
                 <div>
                   <label className={LABEL_STYLE}>Material Family *</label>
                   <div className="flex flex-wrap gap-1.5">
-                    {MATERIAL_FAMILIES.map(m => (
+                    {referenceData.materialFamilies.map(m => (
                       <button
                         key={m}
                         onClick={() => { setMaterialFamily(m); setMaterialSubtype(""); }}

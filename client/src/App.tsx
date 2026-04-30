@@ -19,6 +19,11 @@ import LoginPage from "./pages/LoginPage";
 import SignUpPage from "./pages/SignUpPage";
 import PrintsPage from "./pages/PrintsPage";
 import AboutPage from "./pages/AboutPage";
+import DevGate from "./components/dev/DevGate";
+import DevLayout from "./components/dev/DevLayout";
+import DevProtectedRoute from "./components/dev/DevProtectedRoute";
+import DevAccessPage from "./pages/dev/DevAccessPage";
+import DevFilamentDetailsPage from "./pages/dev/DevFilamentDetailsPage";
 
 function ProtectedApp() {
   return (
@@ -46,6 +51,23 @@ function ProtectedApp() {
 function Router() {
   return (
     <Switch>
+      <Route path="/dev">
+        <DevGate />
+      </Route>
+      <Route path="/dev/filament-details">
+        <DevProtectedRoute>
+          <DevLayout>
+            <DevFilamentDetailsPage />
+          </DevLayout>
+        </DevProtectedRoute>
+      </Route>
+      <Route path="/dev/access">
+        <DevProtectedRoute>
+          <DevLayout>
+            <DevAccessPage />
+          </DevLayout>
+        </DevProtectedRoute>
+      </Route>
       <Route path="/login">
         <PublicOnlyRoute>
           <LoginPage />
