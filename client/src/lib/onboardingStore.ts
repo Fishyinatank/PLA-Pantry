@@ -52,6 +52,18 @@ export function writeDevOnboardingComplete() {
   );
 }
 
+export function writeDevOnboardingPending() {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(
+    DEV_ONBOARDING_KEY,
+    JSON.stringify({
+      onboarding_completed: false,
+      onboarding_completed_at: null,
+      onboarding_version: ONBOARDING_VERSION,
+    })
+  );
+}
+
 export async function loadSupabaseOnboardingState(userId: string, token: string): Promise<OnboardingState> {
   if (!supabaseConfig.url || !supabaseConfig.anonKey) return DEFAULT_ONBOARDING_STATE;
   const rows = await supabaseRequest<PreferenceRow[]>(
@@ -77,6 +89,21 @@ export async function writeSupabaseOnboardingComplete(userId: string, token: str
       user_id: userId,
       onboarding_completed: true,
       onboarding_completed_at: new Date().toISOString(),
+      onboarding_version: ONBOARDING_VERSION,
+    }),
+  });
+}
+
+export async function writeSupabaseOnboardingPending(userId: string, token: string) {
+  if (!supabaseConfig.url || !supabaseConfig.anonKey) return;
+  await supabaseRequest<PreferenceRow[]>("user_preferences?on_conflict=user_id", {
+    token,
+    method: "POST",
+    headers: { Prefer: "resolution=merge-duplicates,return=representation" },
+    body: JSON.stringify({
+      user_id: userId,
+      onboarding_completed: false,
+      onboarding_completed_at: null,
       onboarding_version: ONBOARDING_VERSION,
     }),
   });

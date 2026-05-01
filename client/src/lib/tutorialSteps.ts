@@ -19,8 +19,7 @@ export const tutorialSteps: TutorialStep[] = [
     id: "welcome",
     versionIntroduced: "1.0.0",
     title: "Welcome to PLA Pantry",
-    description:
-      "Track filament inventory, remaining spool weight, print history, and material decisions in one clean workspace.",
+    description: "Track spools, remaining weight, prints, and material choices in one place.",
     route: "/filaments",
     visualType: "welcome",
     icon: Sparkles,
@@ -29,8 +28,7 @@ export const tutorialSteps: TutorialStep[] = [
     id: "add-spool",
     versionIntroduced: "1.0.0",
     title: "Add your first spool",
-    description:
-      "Use Add Spool for new or used rolls. Capture brand, material, color, weights, notes, purchase links, and print settings.",
+    description: "Add new or used rolls with brand, material, color, weight, notes, links, and print settings.",
     route: "/filaments",
     targetSelector: "[data-onboarding='add-spool']",
     visualType: "spool",
@@ -40,8 +38,7 @@ export const tutorialSteps: TutorialStep[] = [
     id: "remaining",
     versionIntroduced: "1.0.0",
     title: "Track remaining filament",
-    description:
-      "Weigh current spools, recalibrate after missed prints, and let PLA Pantry calculate remaining grams and percentage.",
+    description: "Weigh and recalibrate spools. PLA Pantry keeps grams and percent updated.",
     route: "/filaments",
     visualType: "scale",
     icon: Scale,
@@ -50,8 +47,7 @@ export const tutorialSteps: TutorialStep[] = [
     id: "details",
     versionIntroduced: "1.0.0",
     title: "View filament details",
-    description:
-      "Click a filament card to open the detail drawer with print settings, notes, purchase info, and spool visualization.",
+    description: "Click any spool for settings, notes, purchase info, and the spool visual.",
     route: "/filaments",
     targetSelector: "[data-onboarding='filament-grid']",
     visualType: "details",
@@ -61,8 +57,7 @@ export const tutorialSteps: TutorialStep[] = [
     id: "collections",
     versionIntroduced: "1.0.0",
     title: "Collections",
-    description:
-      "Group your spools by brand, material, storage location, or color family to spot inventory patterns quickly.",
+    description: "Group spools by brand, material, storage location, or color family.",
     route: "/collections",
     targetSelector: "[href='/collections']",
     visualType: "collections",
@@ -72,8 +67,7 @@ export const tutorialSteps: TutorialStep[] = [
     id: "prints",
     versionIntroduced: "1.0.0",
     title: "Prints",
-    description:
-      "Log one-time prints, save quick-print templates, reprint common jobs, and automatically subtract filament used.",
+    description: "Log prints, save quick-print templates, reprint jobs, and subtract filament automatically.",
     route: "/prints",
     targetSelector: "[href='/prints']",
     visualType: "prints",
@@ -83,8 +77,7 @@ export const tutorialSteps: TutorialStep[] = [
     id: "settings",
     versionIntroduced: "1.0.0",
     title: "Settings and preferences",
-    description:
-      "Control theme, review account info, sign out, and replay this tutorial whenever you want a refresher.",
+    description: "Control theme, review your account, sign out, or replay this tutorial.",
     route: "/settings",
     targetSelector: "[href='/settings']",
     visualType: "settings",

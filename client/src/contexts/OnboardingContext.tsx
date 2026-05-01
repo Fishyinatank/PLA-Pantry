@@ -4,7 +4,9 @@ import {
   needsOnboarding,
   readDevOnboardingState,
   writeDevOnboardingComplete,
+  writeDevOnboardingPending,
   writeSupabaseOnboardingComplete,
+  writeSupabaseOnboardingPending,
 } from "@/lib/onboardingStore";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useLocation } from "wouter";
@@ -12,7 +14,7 @@ import { useLocation } from "wouter";
 type OnboardingContextValue = {
   open: boolean;
   loading: boolean;
-  openTutorial: () => void;
+  openTutorial: () => Promise<void>;
   closeTutorial: () => void;
   completeTutorial: () => Promise<void>;
 };
@@ -26,7 +28,17 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const closeTutorial = useCallback(() => setOpen(false), []);
-  const openTutorial = useCallback(() => setOpen(true), []);
+  const openTutorial = useCallback(async () => {
+    try {
+      if (isDevMode) {
+        writeDevOnboardingPending();
+      } else if (user?.id && session?.access_token) {
+        await writeSupabaseOnboardingPending(user.id, session.access_token);
+      }
+    } finally {
+      setOpen(true);
+    }
+  }, [isDevMode, session?.access_token, user?.id]);
 
   const completeTutorial = useCallback(async () => {
     try {

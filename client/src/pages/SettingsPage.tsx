@@ -116,7 +116,7 @@ export default function SettingsPage() {
               <p className="text-xs text-muted-foreground">Walk through PLA Pantry again</p>
             </div>
             <button
-              onClick={openTutorial}
+              onClick={() => void openTutorial()}
               className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:opacity-90"
               style={{ background: "var(--gold)", color: "oklch(0.10 0.005 240)" }}
             >
