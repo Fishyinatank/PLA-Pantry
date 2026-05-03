@@ -71,6 +71,13 @@ async function request<T>(
   });
   if (!response.ok) {
     const body = await response.text().catch(() => "");
+    let message = body;
+    try {
+      const json = JSON.parse(body);
+      message = json.message || json.details || json.hint || body;
+    } catch {
+      message = body;
+    }
     const expired =
       response.status === 401 ||
       body.includes("PGRST303") ||
@@ -80,7 +87,7 @@ async function request<T>(
       if (!next?.access_token) throw new Error("Your session expired. Please sign in again.");
       return request<T>(path, next.access_token, init, refresh, true);
     }
-    throw new Error(body || `Supabase request failed (${response.status})`);
+    throw new Error(message || `Supabase request failed (${response.status})`);
   }
   if (response.status === 204) return undefined as T;
   return (await response.json()) as T;
@@ -182,25 +189,29 @@ export function usePrintStore() {
       const next = [{ ...input, id: Date.now(), printedAt: new Date() }, ...readDev<PrintLog>(DEV_PRINT_LOGS_KEY)];
       writeDev(DEV_PRINT_LOGS_KEY, next);
       setLogs(next);
-      return;
+      return next[0];
     }
     if (!session?.access_token) throw new Error("Sign in first.");
+    const printLogPayload = {
+      user_id: session.user.id,
+      print_name: input.name,
+      description: input.description,
+      filament_id: input.filamentId,
+      filament_label: input.filamentLabel,
+      grams_used: input.gramsUsed,
+      filament_before_grams: input.filamentBeforeGrams,
+      filament_after_grams: input.filamentAfterGrams,
+      mode: input.mode,
+      printed_at: new Date().toISOString(),
+    };
     const rows = await request<PrintLogRow[]>("print_logs?select=*", session.access_token, {
       method: "POST",
       headers: { Prefer: "return=representation" },
-      body: JSON.stringify({
-        user_id: session.user.id,
-        print_name: input.name,
-        description: input.description,
-        filament_id: input.filamentId,
-        filament_label: input.filamentLabel,
-        grams_used: input.gramsUsed,
-        filament_before_grams: input.filamentBeforeGrams,
-        filament_after_grams: input.filamentAfterGrams,
-        mode: input.mode,
-      }),
+      body: JSON.stringify(printLogPayload),
     }, refreshSession);
-    setLogs((old) => [toLog(rows[0]), ...old]);
+    const next = toLog(rows[0]);
+    setLogs((old) => [next, ...old]);
+    return next;
   }, [isDevMode, refreshSession, session?.access_token, session?.user.id]);
 
   const deleteLog = useCallback(async (id: number) => {

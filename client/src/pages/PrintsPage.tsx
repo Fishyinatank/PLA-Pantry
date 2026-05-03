@@ -48,6 +48,8 @@ export default function PrintsPage() {
   const [spoolSearch, setSpoolSearch] = useState("");
   const [templateSearch, setTemplateSearch] = useState("");
   const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null);
+  const [isSavingPrint, setIsSavingPrint] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   const selectedTemplate = templates.find((t) => String(t.id) === templateId);
   const selectedSpool = filaments.find((f) => String(f.id) === filamentId);
@@ -73,6 +75,8 @@ export default function PrintsPage() {
     setTemplateId("");
     setSpoolSearch("");
     setTemplateSearch("");
+    setSaveError("");
+    setIsSavingPrint(false);
   };
 
   const returnFilament = async (log: (typeof logs)[number]) => {
@@ -127,6 +131,7 @@ export default function PrintsPage() {
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
+    setSaveError("");
     const spool = filaments.find((f) => String(f.id) === filamentId);
     const used = Number(flow === "reprint" ? selectedTemplate?.estimatedGrams : gramsUsedInput);
     const printName = flow === "reprint" ? selectedTemplate?.name : name;
@@ -136,22 +141,50 @@ export default function PrintsPage() {
     const current = spool.currentTotalWeight
       ? Number(spool.currentTotalWeight)
       : Number(spool.remainingGrams ?? 0) + Number(spool.emptySpoolWeight ?? 0);
-    await recalibrateFilament(spool.id, Math.max(0, current - used));
-    await addLog({
-      name: printName,
-      description: flow === "reprint" ? selectedTemplate?.description ?? null : description || null,
-      filamentId: spool.id,
-      filamentLabel: `${spool.brand} ${spool.colorName ?? spool.materialFamily}`,
-      gramsUsed: used,
-      filamentBeforeGrams: beforeRemaining,
-      filamentAfterGrams: afterRemaining,
-      mode: flow === "reprint" ? "reprint" : saveTemplate ? "new" : "one_time",
-    });
-    if (flow === "new" && saveTemplate) {
-      await addTemplate({ name, description: description || null, estimatedGrams: used, estimatedCost: null });
+    setIsSavingPrint(true);
+    try {
+      const createdLog = await addLog({
+        name: printName,
+        description: flow === "reprint" ? selectedTemplate?.description ?? null : description || null,
+        filamentId: spool.id,
+        filamentLabel: `${spool.brand} ${spool.colorName ?? spool.materialFamily}`,
+        gramsUsed: used,
+        filamentBeforeGrams: beforeRemaining,
+        filamentAfterGrams: afterRemaining,
+        mode: flow === "reprint" ? "reprint" : saveTemplate ? "new" : "one_time",
+      });
+
+      try {
+        await recalibrateFilament(spool.id, Math.max(0, current - used));
+      } catch (updateError) {
+        if (createdLog?.id) {
+          await deleteLog(createdLog.id).catch((rollbackError) => {
+            if (import.meta.env.DEV) console.error("[Prints] Failed to roll back print log", rollbackError);
+          });
+        }
+        throw updateError;
+      }
+
+      if (flow === "new" && saveTemplate) {
+        try {
+          await addTemplate({ name, description: description || null, estimatedGrams: used, estimatedCost: null });
+        } catch (templateError) {
+          const message = templateError instanceof Error ? templateError.message : "Quick-print template was not saved.";
+          if (import.meta.env.DEV) console.warn("[Prints] Quick-print template save failed", templateError);
+          toast.warning(`Print logged, but quick-print was not saved. ${message}`);
+        }
+      }
+
+      toast.success("Print logged");
+      resetFlow();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to save print";
+      setSaveError(message);
+      toast.error(message);
+      if (import.meta.env.DEV) console.error("[Prints] Save print failed", err);
+    } finally {
+      setIsSavingPrint(false);
     }
-    toast.success("Print logged");
-    resetFlow();
   };
 
   return (
@@ -189,7 +222,7 @@ export default function PrintsPage() {
 
         {flow && (
           <div className="fixed inset-0 z-50 flex items-center justify-center">
-            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-fade-in" onClick={resetFlow} />
+            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-fade-in" onClick={() => { if (!isSavingPrint) resetFlow(); }} />
             <div className="relative z-10 w-full max-w-lg mx-4 animate-scale-in">
               <div className="w-full rounded-2xl overflow-hidden shadow-2xl" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
                 <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: "var(--border)" }}>
@@ -197,7 +230,7 @@ export default function PrintsPage() {
                     <div className="w-9 h-9 rounded-xl grid place-items-center" style={{ background: "oklch(0.78 0.16 85 / 0.13)", color: "var(--gold)" }}><Printer className="w-4 h-4" /></div>
                     <h2 className="text-base font-semibold">{flow === "choose" ? "Log a Print" : flow === "new" ? "New Print" : "Reprint"}</h2>
                   </div>
-                  <button onClick={resetFlow} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"><X className="w-4 h-4" /></button>
+                  <button onClick={resetFlow} disabled={isSavingPrint} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors disabled:opacity-50"><X className="w-4 h-4" /></button>
                 </div>
 
                 {flow === "choose" ? (
@@ -231,10 +264,15 @@ export default function PrintsPage() {
                         <span>{selectedSpool ? spoolLabel(selectedSpool) : "Search spools"}</span>
                         <ChevronDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                       </button>
+                      {saveError && (
+                        <p className="rounded-lg px-3 py-2 text-sm" style={{ background: "oklch(0.55 0.20 25 / 0.10)", color: "oklch(0.62 0.20 25)", border: "1px solid oklch(0.55 0.20 25 / 0.25)" }}>
+                          {saveError}
+                        </p>
+                      )}
                     </div>
                     <div className="flex justify-between gap-3 px-5 py-4 border-t" style={{ borderColor: "var(--border)" }}>
-                      <button type="button" onClick={resetFlow} className="px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent">Cancel</button>
-                      <button className="rounded-lg px-4 py-2 text-sm font-semibold" style={{ background: "var(--gold)", color: "oklch(0.10 0.005 240)" }}>Save print</button>
+                      <button type="button" onClick={resetFlow} disabled={isSavingPrint} className="px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent disabled:opacity-50">Cancel</button>
+                      <button disabled={isSavingPrint} className="rounded-lg px-4 py-2 text-sm font-semibold disabled:opacity-50" style={{ background: "var(--gold)", color: "oklch(0.10 0.005 240)" }}>{isSavingPrint ? "Saving…" : "Save print"}</button>
                     </div>
                   </form>
                 )}
